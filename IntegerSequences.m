@@ -4,15 +4,15 @@
 
 (* :Author: Eric Rowland *)
 
-(* :Date: {2019, 10, 12} *)
+(* :Date: {2020, 5, 30} *)
 
-(* :Package Version: 1.52 *)
+(* :Package Version: 1.53 *)
 
 (* :Mathematica Version: 12 *)
 
 (* :Discussion:
 	IntegerSequences is a package for identifying and computing with integer sequences from a variety of classes.
-	Documentation can be found at  http://people.hofstra.edu/Eric_Rowland/packages.html .
+	Documentation can be found at  https://github.com/ericrowland/IntegerSequences .
 *)
 
 (* :Acknowledgements:
@@ -49,6 +49,8 @@ IntegerSequences`Private`$SymbolList = {
 	ClearMotzkinNumberCache,
 	CompleteAutomatonQ,
 	CompressStateNames,
+	ConstantRecursiveSequence,
+	ConstantRecursiveSequenceReduce,
 	ConstantTermSequence,
 	ConstantTermSequenceReduce,
 	DeterministicAutomatonQ,
@@ -63,6 +65,9 @@ IntegerSequences`Private`$SymbolList = {
 	FindAutomaticSequenceAutomaton,
 	FindAutomaticSequenceFunction,
 	FindAutomaticSequenceRecurrence,
+	FindConstantRecursiveSequenceFunction,
+	FindConstantRecursiveSequenceRecurrence,
+	FindPeriodicSequenceFunction,
 	FindPolynomial,
 	FindQuasiPolynomial,
 	FindRegularSequenceFunction,
@@ -73,6 +78,7 @@ IntegerSequences`Private`$SymbolList = {
 	FromRecurrence,
 	GatherEdges,
 	GeneratingFunctionRelations,
+	GlaisherGould,
 	HashStateNames,
 	ImportMotzkinNumber,
 	IndexedStateNames,
@@ -90,6 +96,7 @@ IntegerSequences`Private`$SymbolList = {
 	LinearRecurrenceTable,
 *)
 	MaxDenominator,
+	MinimizeComplexity,
 	MorphicSequence,
 	MorphicSequenceReduce,
 	MorphismAdjacencyMatrix,
@@ -101,6 +108,9 @@ IntegerSequences`Private`$SymbolList = {
 *)
 	OEISWebLookup,
 	OrePolynomial,
+	PadovanNumber,
+	PellNumber,
+	PeriodicSequence,
 	Radical,
 	ReduceAutomaton,
 	RegularSequence,
@@ -222,10 +232,8 @@ AutomaticSequenceAutomaton::usage =
 box[AutomaticSequenceAutomaton[AutomaticSequence["M", "k"]["n"]]] <> " extracts the automaton from an AutomaticSequence object."
 
 AutomaticSequenceReduce::usage =
-box[AutomaticSequenceReduce["expr", "n"]] <> " attempts to reduce " <> box["expr"] <> " to a single AutomaticSequence object as a function of " <> box["n"] <> "."
-(*
+box[AutomaticSequenceReduce["expr", "n"]] <> " attempts to reduce " <> box["expr"] <> " to a single AutomaticSequence object as a function of " <> box["n"] <> ".\n" <>
 box[AutomaticSequenceReduce["expr", "n", "k"]] <> " attempts to reduce " <> box["expr"] <> " to a " <> box["k"] <> "\[Hyphen]automatic sequence."
-*)
 
 Automaton::usage =
 box[Automaton[{"\[Ellipsis]", {Subscript["s", "i"] -> Subscript["s", "j"], "label"}, "\[Ellipsis]"}, "init"]] <> " represents an automaton with initial state " <> box["init"] <> " and labeled transition rules " <> box[Subscript["s", "i"] -> Subscript["s", "j"]] <> " between states.\n" <>
@@ -292,6 +300,12 @@ box[CompleteAutomatonQ["M"]] <> " yields True if " <> box["M"] <> " is an automa
 CompressStateNames::usage =
 "CompressStateNames is an option for AutomaticSequenceReduce that specifies whether to compress state names when possible so that equivalent states are more likely to have the same name."
 
+ConstantRecursiveSequence::usage =
+box[ConstantRecursiveSequence[{Subscript["c", 0], Subscript["c", 1], "\[Ellipsis]", Subscript["c", "l" - 1]}, {Subscript["s", 0], Subscript["s", 1], "\[Ellipsis]", Subscript["s", "l" - 1]}]["n"]] <> " gives the " <> box["n"] <> "th term of the constant\[Hyphen]recursive sequence satisfying " <> box["s"["n" + "l"] == Subscript["c", 0] "s"["n"] + Subscript["c", 1] "s"["n" + 1] + "\[CenterEllipsis]" + Subscript["c", "l" - 1] "s"["n" + "l" - 1]] <> " with initial conditions " <> box[SubscriptSequence["s", {0, 1, "..."}]] <> "."
+
+ConstantRecursiveSequenceReduce::usage =
+box[ConstantRecursiveSequenceReduce["expr", "n"]] <> " attempts to reduce " <> box["expr"] <> " to a single ConstantRecursiveSequence object as a function of " <> box["n"] <> "."
+
 ConstantTermSequence::usage =
 box[ConstantTermSequence["f", "vars"]["n"]] <> " gives the constant term in the Laurent polynomial " <> box["f"^"n"] <> ".\n" <>
 box[ConstantTermSequence["f", "g", "vars"]["n"]] <> " gives the constant term in " <> box["f"^"n" * "g"] <> "."
@@ -336,30 +350,42 @@ box[FactorGrid["list"]] <> " displays a grid containing the order to which all p
 box[FactorGrid["list", "zero"]] <> " replaces each 0 in the table with " <> box["zero"] <> " rather than with Null."
 
 FindAutomaticSequenceAutomaton::usage =
-box[FindAutomaticSequenceAutomaton[SubscriptList["a", {0, 1, "..."}], "k"]] <> " attempts to find an automaton which reproduces the sequence " <> box[Subscript["a", "n"]] <> " when fed the base\[Hyphen]" <> box["k"] <> " digits of " <> box["n"] <> ", starting with the least significant digit.\n" <>
-box[FindAutomaticSequenceAutomaton["array", SubscriptList["k", {1, 2, "...", "d"}]]] <> " finds an automaton which reproduces a " <> box["d"] <> "\[Hyphen]dimensional sequence in bases " <> box[SubscriptSequence["k", {1, 2, "...", "d"}]] <> "."
+box[FindAutomaticSequenceAutomaton[SubscriptList["a", {0, 1, "..."}], "k"]] <> " attempts to find an automaton that reproduces the sequence " <> box[Subscript["a", "n"]] <> " when fed the base\[Hyphen]" <> box["k"] <> " digits of " <> box["n"] <> ", starting with the least significant digit.\n" <>
+box[FindAutomaticSequenceAutomaton["array", SubscriptList["k", {1, 2, "...", "d"}]]] <> " finds an automaton that reproduces a " <> box["d"] <> "\[Hyphen]dimensional sequence in bases " <> box[SubscriptSequence["k", {1, 2, "...", "d"}]] <> "."
 
 FindAutomaticSequenceFunction::usage =
-box[FindAutomaticSequenceFunction[SubscriptList["a", {0, 1, "..."}], "k"]] <> " attempts to find a " <> box["k"] <> "\[Hyphen]automatic sequence which reproduces the sequence " <> box[Subscript["a", "n"]] <> ".\n" <>
-box[FindAutomaticSequenceFunction["array", SubscriptList["k", {1, 2, "...", "d"}]]] <> " finds a " <> box["d"] <> "\[Hyphen]dimensional (" <> box[SubscriptSequence["k", {1, 2, "...", "d"}]] <> ")\[Hyphen]automatic sequence which reproduces a full array of values.\n" <>
+box[FindAutomaticSequenceFunction[SubscriptList["a", {0, 1, "..."}], "k"]] <> " attempts to find a " <> box["k"] <> "\[Hyphen]automatic sequence that reproduces the sequence " <> box[Subscript["a", "n"]] <> ".\n" <>
+box[FindAutomaticSequenceFunction["array", SubscriptList["k", {1, 2, "...", "d"}]]] <> " finds a " <> box["d"] <> "\[Hyphen]dimensional (" <> box[SubscriptSequence["k", {1, 2, "...", "d"}]] <> ")\[Hyphen]automatic sequence that reproduces a full array of values.\n" <>
 box[FindAutomaticSequenceFunction["array", "kspec", "n"]] <> " gives the function applied to " <> box["n"] <> "."
 
 FindAutomaticSequenceRecurrence::usage =
 box[FindAutomaticSequenceRecurrence[SubscriptList["a", {0, 1, "..."}], "k", "s"["n"]]] <> " attempts to find equalities between subsequences of the sequence " <> box[Subscript["a", "n"]] <> " of the form " <> box["s"["k"^"e" * "n" + "i"]] <> " that determine the sequence.\n" <>
 box[FindAutomaticSequenceRecurrence["array", SubscriptList["k", {1, 2, "...", "d"}], "s"[SubscriptSequence["n", {1, 2, "...", "d"}]]]] <> " finds equalities between subarrays of a " <> box["d"] <> "\[Hyphen]dimensional sequence in bases " <> box[SubscriptSequence["k", {1, 2, "...", "d"}]] <> "."
 
+FindConstantRecursiveSequenceFunction::usage =
+box[FindConstantRecursiveSequenceFunction[SubscriptList["a", {0, 1, "..."}]]] <> " attempts to find a constant\[Hyphen]recursive sequence that reproduces the sequence " <> box[Subscript["a", "n"]] <> ".\n" <>
+box[FindConstantRecursiveSequenceFunction["list", "n"]] <> " gives the function applied to " <> box["n"] <> "."
+
+FindConstantRecursiveSequenceRecurrence::usage =
+box[FindConstantRecursiveSequenceRecurrence[SubscriptList["a", {0, 1, "..."}], "s"["n"]]] <> " attempts to find linear relations between subsequences of the sequence " <> box[Subscript["a", "n"]] <> " of the form " <> box["s"["n" + "i"]] <> " that determine the sequence."
+
+FindPeriodicSequenceFunction::usage =
+box[FindPeriodicSequenceFunction[SubscriptList["a", {0, 1, "..."}]]] <> " gives the minimal\[Hyphen]length periodic sequence that reproduces the sequence " <> box[Subscript["a", "n"]] <> ".\n" <>
+box[FindPeriodicSequenceFunction[SubscriptList["a", {0, 1, "..."}], "n"]] <> " gives the function applied to " <> box["n"] <> "\n." <>
+box[FindPeriodicSequenceFunction[{Subscript["a", "d"], Subscript["a", "d" + 1], "\[Ellipsis]"}, "n", "d"]] <> " indexes terms beginning at " <> box["d"] <> "."
+
 FindPolynomial::usage =
-box[FindPolynomial[SubscriptList["a", {1, 2, "..."}], "x"]] <> " constructs an interpolating polynomial in " <> box["x"] <> " which reproduces the function values " <> box[Subscript["a", "i"]] <> " at successive integer values " <> box[1, 2, "\[Ellipsis]"] <> " of " <> box["x"] <> ".\n" <>
-box[FindPolynomial[{Subscript["a", "d"], Subscript["a", "d"+1], "\[Ellipsis]"}, "x", "d"]] <> " indexes terms beginning at " <> box["d"] <> ".\n" <>
-box[FindPolynomial["array", {"x", "y", "\[Ellipsis]"}, SubscriptList["d", {"x", "y", "..."}]]] <> " gives a multivariate polynomial which provides an exact fit to a full array of values."
+box[FindPolynomial[SubscriptList["a", {1, 2, "..."}], "n"]] <> " gives the minimal\[Hyphen]degree polynomial that reproduces the sequence " <> box[Subscript["a", "n"]] <> ".\n" <>
+box[FindPolynomial[{Subscript["a", "d"], Subscript["a", "d" + 1], "\[Ellipsis]"}, "n", "d"]] <> " indexes terms beginning at " <> box["d"] <> ".\n" <>
+box[FindPolynomial["array", SubscriptList["n", {1, 2, "..."}], SubscriptList["d", {1, 2, "..."}]]] <> " gives a multivariate polynomial that reproduces a full array of values."
 
 FindQuasiPolynomial::usage =
 box[FindQuasiPolynomial[SubscriptList["a", {1, 2, "..."}], "x", "m"]] <> " constructs an interpolating polynomial in " <> box["x"] <> " for each residue class of " <> box["x"] <> " modulo " <> box["m"] <> ".\n" <>
-box[FindQuasiPolynomial[{Subscript["a", "d"], Subscript["a", "d"+1], "\[Ellipsis]"}, "x", "m", "d"]] <> " indexes terms beginning at " <> box["d"] <> "."
+box[FindQuasiPolynomial[{Subscript["a", "d"], Subscript["a", "d" + 1], "\[Ellipsis]"}, "x", "m", "d"]] <> " indexes terms beginning at " <> box["d"] <> "."
 
 FindRegularSequenceFunction::usage =
-box[FindRegularSequenceFunction[SubscriptList["a", {0, 1, "..."}], "k"]] <> " attempts to find a " <> box["k"] <> "\[Hyphen]regular sequence which reproduces the sequence " <> box[Subscript["a", "n"]] <> ".\n" <>
-box[FindRegularSequenceFunction["array", SubscriptList["k", {1, 2, "...", "d"}]]] <> " finds a " <> box["d"] <> "\[Hyphen]dimensional (" <> box[SubscriptSequence["k", {1, 2, "...", "d"}]] <> ")\[Hyphen]regular sequence which reproduces a full array of values.\n" <>
+box[FindRegularSequenceFunction[SubscriptList["a", {0, 1, "..."}], "k"]] <> " attempts to find a " <> box["k"] <> "\[Hyphen]regular sequence that reproduces the sequence " <> box[Subscript["a", "n"]] <> ".\n" <>
+box[FindRegularSequenceFunction["array", SubscriptList["k", {1, 2, "...", "d"}]]] <> " finds a " <> box["d"] <> "\[Hyphen]dimensional (" <> box[SubscriptSequence["k", {1, 2, "...", "d"}]] <> ")\[Hyphen]regular sequence that reproduces a full array of values.\n" <>
 box[FindRegularSequenceFunction["array", "kspec", "n"]] <> " gives the function applied to " <> box["n"] <> "."
 
 FindRegularSequenceRecurrence::usage =
@@ -367,7 +393,7 @@ box[FindRegularSequenceRecurrence[SubscriptList["a", {0, 1, "..."}], "k", "s"["n
 box[FindRegularSequenceRecurrence["array", SubscriptList["k", {1, 2, "...", "d"}], "s"[SubscriptSequence["n", {1, 2, "...", "d"}]]]] <> " finds relations between subarrays of a " <> box["d"] <> "\[Hyphen]dimensional sequence in bases " <> box[SubscriptSequence["k", {1, 2, "...", "d"}]] <> "."
 
 FlattenInputAlphabet::usage =
-"FlattenInputAlphabet is an option for FindAutomaticSequenceAutomaton and related functions that specifies whether to replace the input alphabet " <> box[{{0}, {1}, "\[Ellipsis]", {"k"-1}}] <> " with " <> box[{0, 1, "\[Ellipsis]", "k"-1}] <> "."
+"FlattenInputAlphabet is an option for FindAutomaticSequenceAutomaton and related functions that specifies whether to replace the input alphabet " <> box[{{0}, {1}, "\[Ellipsis]", {"k" - 1}}] <> " with " <> box[{0, 1, "\[Ellipsis]", "k" - 1}] <> "."
 
 FromCoefficientList::usage =
 box[FromCoefficientList["list", "var"]] <> " constructs a polynomial in " <> box["var"] <> " from its coefficient list.\n" <>
@@ -387,6 +413,9 @@ GatherEdges::usage =
 GeneratingFunctionRelations::usage =
 box[GeneratingFunctionRelations[SubscriptList["eqn", {1, 2, "..."}], "s"[SubscriptSequence["n", {1, 2, "...", "k"}]], "f"[SubscriptSequence["x", {1, 2, "...", "k"}]]]] <> " gives equations satisfied by the multivariate generating function " <> box["f"[SubscriptSequence["x", {1, 2, "...", "k"}]]] <> " of the sequence " <> box["s"[SubscriptSequence["n", {1, 2, "...", "k"}]]] <> " satisfying a linear system of partial recurrence equations."
 
+GlaisherGould::usage =
+box[GlaisherGould["n"]] <> " gives the " <> box["n"] <> "th term in the Glaisher\[Dash]Gould sequence."
+
 HashStateNames::usage =
 "HashStateNames is an option for AutomaticSequenceReduce and other automaton construction functions that specifies whether states should be considered equivalent if their hash values coincide."
 
@@ -394,7 +423,7 @@ ImportMotzkinNumber::usage =
 box[ImportMotzkinNumber["n"]] <> " loads into cache the (" <> box["n" - 1] <> ")st and " <> box["n"] <> "th Motzkin numbers from $MotzkinNumberDirectory, if available."
 
 IndexedStateNames::usage =
-"IndexedStateNames is an option for FindAutomaticSequenceAutomaton and related functions that specifies whether to replace state names with integers."
+"IndexedStateNames is an option for AutomatonMinimize and related functions that specifies whether to replace state names with integers."
 
 InputAlphabet::usage =
 "InputAlphabet is an option for Automaton that specifies the input alphabet."
@@ -410,7 +439,7 @@ IntermediateFunction::usage =
 *)
 
 JacobsthalNumber::usage =
-box[JacobsthalNumber["n"]] <> " gives the " <> box["n"] <> "th Jacobsthal number " <> box[Subscript["J", "n"]] <> "."
+box[JacobsthalNumber["n"]] <> " gives the " <> box["n"] <> "th Jacobsthal number."
 
 LaurentPolynomialCoefficientList::usage =
 box[LaurentPolynomialCoefficientList["poly", "var"]] <> " gives a list of coefficients of powers of " <> box["var"] <> " in the Laurent polynomial " <> box["poly"] <> ".\n" <>
@@ -433,6 +462,9 @@ box[LinearRecurrenceTable["ker", "init", "nspec", "f"]] <> " applies the functio
 
 MaxDenominator::usage =
 "MaxDenominator is an option for SeriesSolve that specifies the maximum denominator to allow in the exponents of solutions."
+
+MinimizeComplexity::usage =
+"MinimizeComplexity is an option for various sequence construction functions that specifies whether to compute the smallest representation of a sequence."
 
 MorphicSequence::usage =
 box[MorphicSequence["rule", "init"]["n"]] <> " gives the " <> box["n"] <> "th term in the fixed point, beginning with " <> box["init"] <> ", of the morphism " <> box["rule"] <> ".\n" <>
@@ -471,6 +503,15 @@ OrePolynomial::usage =
 box[OrePolynomial["poly", "x", "n"]] <> " gives a multiple of " <> box["poly"] <> " whose exponents are powers of " <> box["n"] <> ".\n" <>
 box[OrePolynomial["poly", {Subscript["x", 1], Subscript["x", 2], "\[Ellipsis]", Subscript["x", "k"], "y"}, "n"]] <> " gives a multiple of " <> box["poly"] <> " whose exponents in " <> box["y"] <> " are powers of " <> box["n"] <> "."
 
+PadovanNumber::usage =
+box[PadovanNumber["n"]] <> " gives the " <> box["n"] <> "th Padovan number."
+
+PellNumber::usage =
+box[PellNumber["n"]] <> " gives the " <> box["n"] <> "th Pell number."
+
+PeriodicSequence::usage =
+box[PeriodicSequence["period"]["n"]] <> " gives the " <> box["n"] <> "th term of a periodic sequence."
+
 Radical::usage =
 box[Radical["n"]] <> " gives the product of the prime divisors of " <> box["n"] <> "."
 
@@ -479,7 +520,7 @@ box[ReduceAutomaton["expr", "k", "vars"]] <> " reduces the statement " <> box["e
 box[ReduceAutomaton["expr", "k"]] <> " gives an automaton for an expression in which all variables are quantified."
 
 RegularSequence::usage =
-box[RegularSequence["u", {Subscript["m", 0], Subscript["m", 1], "\[Ellipsis]", Subscript["m", "k"-1]}, "v", "k"]["n"]] <> " gives " <> box[Dot["u", Subscript["m", Subscript["n", 0]], Subscript["m", Subscript["n", 1]], "\[CenterEllipsis]", Subscript["m", Subscript["n", "l"]], "v"]] <> ", where " <> box["n" == Subscript["n", "l"] "\[CenterEllipsis]" Subscript["n", 1] Subscript["n", 0]] <> " in base " <> box["k"] <> ".\n" <>
+box[RegularSequence["u", {Subscript["m", 0], Subscript["m", 1], "\[Ellipsis]", Subscript["m", "k" - 1]}, "v", "k"]["n"]] <> " gives " <> box[Dot["u", Subscript["m", Subscript["n", 0]], Subscript["m", Subscript["n", 1]], "\[CenterEllipsis]", Subscript["m", Subscript["n", "l"]], "v"]] <> ", where " <> box["n" == Subscript["n", "l"] "\[CenterEllipsis]" Subscript["n", 1] Subscript["n", 0]] <> " in base " <> box["k"] <> ".\n" <>
 box[RegularSequence["u", "matrixarray", "v", SubscriptList["k", {1, 2, "...", "d"}]][SubscriptSequence["n", {1, 2, "...", "d"}]]] <> " gives the value of a " <> box["d"] <> "\[Hyphen]dimensional (" <> box[SubscriptSequence["k", {1, 2, "...", "d"}]] <> ")\[Hyphen]regular sequence.\n" <>
 box[RegularSequence["u", "matrixarray", "v"]["n"]] <> " infers the base " <> box["k"] <> " from " <> box["matrixarray"] <> "."
 (*
@@ -628,6 +669,52 @@ With[{constantterm = First[polynomial]},
 ]
 ConstantTerm[monomial_, variables_List] :=
 	If[FreeQ[monomial, Alternatives @@ variables], monomial, 0]
+
+(* not in use
+ConstantTermSequenceTermMod[powerpolynomial_, factorpolynomial_, n_, modulus_?PrimePowerQ, variables_List] /;
+	And[
+		UnsameQ @@ variables,
+		SubsetQ[variables, Variables[{powerpolynomial, factorpolynomial}]],
+		LaurentPolynomialQ[factorpolynomial, variables],
+		LaurentPolynomialQ[factorpolynomial, variables]
+	] :=
+Module[
+	{p, ndigits, newpowerpolynomial, newstate, penultimatestate},
+	p = First[NumberTheory`PrimePower[modulus]];
+	ndigits = DigitList[n, p];
+	penultimatestate = Fold[
+		Function[
+			{currentstate, digit}
+			,
+Print[digit];
+Print[Tab, "newpowerpolynomial"];
+(* xxx in some cases we could save work by not recomputing this if the polynomial has stabilized, but this won't happen generically until alpha steps or whatever *)
+			newpowerpolynomial = Expand[currentstate[[1]]^p, Modulus -> modulus];
+Print[Tab, Hash[newpowerpolynomial]];
+Print[Tab, "newstate"];
+			newstate = Expand[currentstate[[1]]^digit currentstate[[2]], Modulus -> modulus];
+Print[Tab, "LaurentPolynomialCoefficientRules"];
+			If[And @@ Divisible[Join @@ First /@ LaurentPolynomialCoefficientRules[newpowerpolynomial, variables], p],
+(* xxx for Motkin numbers, this seems to occur precisely for primes (and never prime powers), and only occurs once.  Why is that?  Can we use it? *)
+Print[Tab, "Cartier0WithoutSelect"];
+				newpowerpolynomial = Cartier0WithoutSelect[newpowerpolynomial, variables, p];
+Print[Tab, "Cartier0"];
+				newstate = Cartier0[newstate, variables, p]
+			];
+			{newpowerpolynomial, newstate}
+		],
+		Expand[{powerpolynomial, factorpolynomial}, Modulus -> modulus],
+(* xxx if  n==0  this is going to complain *)
+		Most[ndigits]
+	];
+Print[Last[ndigits]];
+(* xxx does this assume something about  First[finalstate] ?  like that its constant term is 1? *)
+	ConstantTerm[
+		Expand[penultimatestate[[1]]^Last[ndigits] penultimatestate[[2]], Modulus -> modulus],
+		variables
+	]
+]
+*)
 
 (* CoprimeDivisor[n, m] gives the largest divisor of n that is relatively prime to m. *)
 CoprimeDivisor[n_Integer?Positive, m_Integer] := n/FixedPoint[GCD[m #, n] &, 1]
@@ -1755,6 +1842,364 @@ AutomatonStateReplace[
 	]
 
 
+(*** automaton construction functions ***)
+
+AutomatonProgress[starttime_, stateindex_, statecount_] :=
+	Column[{
+		Row[{"Processing state ", stateindex, " of ", statecount}],
+		ProgressIndicator[(stateindex - 1)/statecount],
+		If[stateindex == 1,
+			Row[{}],
+			Row[{"Processing known states will finish at ", DatePlus[starttime, statecount/(stateindex - 1) DateDifference[starttime, DateObject[]]]}]
+		]
+	}]
+
+(* This constructs an automaton from a function that computes all out-edges from a state simultaneously. *)
+EdgeListAutomaton[
+	{
+		newstatesfunction_,
+		statepostprocessfunction_,
+		letterfunction_
+	},
+	initialstate_,
+	dimension_,
+	outputfunction : Except[_Rule] : Identity,
+	options : OptionsPattern[]
+] :=
+Module[
+	{
+		edges, statecount, state, statehashassociation, stateindex, output, automaton,
+		newstate, newstatehash, newstateindex, starttime,
+		checkstatesameness, memorystorage, directory
+	},
+	checkstatesameness = !TrueQ[OptionValue[HashStateNames]];
+	memorystorage = Replace[OptionValue[StateStorage],
+		{
+			"Disk" | {"Disk", ___, "Directory" -> Automatic, ___} :> (
+				directory = $TemporaryDirectory;
+				False
+			),
+		 	{"Disk", ___, "Directory" -> dir_, ___} :> (
+				directory = dir;
+				False
+			),
+			"Memory" ->
+				True,
+			_ ->
+				False
+		}
+	];
+(* TODO check that we actually get a speed benefit by testing inequality of hash values; is it only beneficial once we've started paging to disk? *)
+	statehashassociation = Association[];
+	If[outputfunction =!= Identity,
+		output = Association[]
+	];
+	(* initial state *)
+	newstate = initialstate;
+	statecount = 1;
+	If[memorystorage,
+		state[statecount] = newstate,
+		Export[FileNameJoin[{directory, ToString[statecount] <> ".m"}], newstate]
+	];
+	statehashassociation[Hash[newstate]] = statecount;
+	If[outputfunction =!= Identity,
+		output[statecount] = outputfunction[newstate]
+	];
+	(* traversal through the automaton *)
+	stateindex = 1;
+	starttime = DateObject[];
+	If[TrueQ[OptionValue[Monitor]] && 10 < $VersionNumber < 11,
+		Message[Monitor::abort]
+	];
+	(* For automata that don't fit in memory, Reap (not Join) takes a long time to assemble the edge list. *)
+	edges = Join @@ Reap[
+		If[TrueQ[OptionValue[Monitor]] && !(10 < $VersionNumber < 11), Monitor, List][
+			While[stateindex <= statecount,
+				Sow[
+					MapIndexed[
+						Function[{rawstate, index},
+							newstate = statepostprocessfunction[rawstate];
+(* TODO Do associations do their own hashing, so that manual hashing is actually less efficient? *)
+							newstatehash = Hash[newstate];
+(* Is this faster than my hacky hashing if  state  is an association?
+							newstateindex = Replace[FirstPosition[state, newstate], {Key[i_]} :> i];
+*)
+							newstateindex = statehashassociation[newstatehash];
+							If[
+								And[
+									checkstatesameness,
+									!MissingQ[newstateindex],
+									If[memorystorage,
+										state[newstateindex],
+										Import[FileNameJoin[{directory, ToString[newstateindex] <> ".m"}]]
+									] =!= newstate
+								]
+								,
+(* xxx this isn't really ideal; should be able to recover by checking the full states.  but then we lose speed, since the association needs distinct keys *)
+(* TODO Substitute the function that's calling EdgeListAutomaton in for EdgeListAutomaton here? *)
+								Message[EdgeListAutomaton::hash, newstatehash];
+								newstateindex = Missing["NotFound"]
+							];
+							{
+								stateindex -> If[MissingQ[newstateindex],
+									statecount++;
+									If[memorystorage,
+										state[statecount] = newstate,
+										Export[FileNameJoin[{directory, ToString[statecount] <> ".m"}], newstate]
+									];
+									statehashassociation[newstatehash] = statecount;
+									If[outputfunction =!= Identity,
+										output[statecount] = outputfunction[newstate]
+									];
+									statecount
+									,
+									newstateindex
+								],
+								letterfunction[index]
+							}
+						],
+						newstatesfunction[
+							(* the current state *)
+							If[memorystorage,
+								state[stateindex],
+								Import[FileNameJoin[{directory, ToString[stateindex] <> ".m"}]]
+							]
+						]
+					]
+				];
+				If[!checkstatesameness,
+					If[memorystorage,
+						Unset[state[stateindex]],
+						DeleteFile[FileNameJoin[{directory, ToString[stateindex] <> ".m"}]]
+					]
+				];
+				stateindex++
+			],
+			AutomatonProgress[starttime, stateindex, statecount]
+		];
+		If[checkstatesameness,
+(* keep this? *)
+If[TrueQ[OptionValue[Monitor]],
+		PrintTemporary["Clearing states"]
+];
+			If[memorystorage,
+				(* Unsetting the states one at a time seems to be better than  Clear[state]  for avoiding a time-consuming memory spike when states have been swapped to disk. *)
+				Unset[state[#]] & /@ Range[statecount, 1, -1],
+				DeleteFile[FileNameJoin[{directory, ToString[#] <> ".m"}] & /@ Range[statecount]]
+			]
+		];
+	][[2, 1]];
+	If[TrueQ[OptionValue[FlattenInputAlphabet]] && dimension == 1,
+(* keep this? *)
+If[TrueQ[OptionValue[Monitor]],
+	PrintTemporary["Flattening edges"]
+];
+		edges = MapAt[First, 2] /@ edges
+	];
+(* keep this? *)
+If[TrueQ[OptionValue[Monitor]],
+	PrintTemporary["Constructing automaton"]
+];
+	automaton = If[outputfunction =!= Identity,
+		Automaton[edges, 1, Normal[output]],
+		Automaton[edges, 1]
+	];
+	If[TrueQ[OptionValue[MinimizeComplexity]],
+		If[TrueQ[OptionValue[Monitor]],
+			PrintTemporary["Minimizing"]
+		];
+		automaton = AutomatonMinimize[automaton]
+(*
+		automaton = AutomatonMinimize[automaton, IndexedStateNames -> OptionValue[IndexedStateNames]],
+		If[TrueQ[OptionValue[IndexedStateNames]],
+			automaton = IndexAutomaton[automaton]
+		]
+*)
+	];
+	automaton
+]
+Options[EdgeListAutomaton] = {
+	FlattenInputAlphabet -> True,
+	HashStateNames -> False,
+(*
+	IndexedStateNames -> True,
+*)
+	MinimizeComplexity -> True,
+	Monitor -> False,
+	StateStorage -> "Memory"
+}
+(* TODO Should this tell the user to use a different option? *)
+EdgeListAutomaton::hash = "Hash value `1` occurs for two distinct states; resulting automaton may not be correct."
+
+(* This constructs an automaton from a transition function.
+   The first argument is a function whose first argument is a state and whose second argument is a letter;
+   it outputs the state reached by transitioning from the state along an edge. *)
+StateAutomaton[
+	newstatefunction_,
+	initialstate_,
+	inputalphabet_,
+	outputfunction : Except[_Rule] : Identity,
+	options : OptionsPattern[]
+] :=
+Module[
+	{
+		edges, statecount, state, statehashassociation, stateindex, output, automaton,
+		currentstate, newstate, newstatehash, newstateindex, starttime,
+		checkstatesameness, memorystorage, directory
+	},
+	checkstatesameness = !TrueQ[OptionValue[HashStateNames]];
+	memorystorage = Replace[OptionValue[StateStorage],
+		{
+			"Disk" | {"Disk", ___, "Directory" -> Automatic, ___} :> (
+				directory = $TemporaryDirectory;
+				False
+			),
+		 	{"Disk", ___, "Directory" -> dir_, ___} :> (
+				directory = dir;
+				False
+			),
+			"Memory" ->
+				True,
+			_ ->
+				False
+		}
+	];
+(* TODO check that we actually get a speed benefit by testing inequality of hash values; is it only beneficial once we've started paging to disk? *)
+	statehashassociation = Association[];
+	If[outputfunction =!= Identity,
+		output = Association[]
+	];
+	(* initial state *)
+	newstate = initialstate;
+	statecount = 1;
+	If[memorystorage,
+		state[statecount] = newstate,
+		Export[FileNameJoin[{directory, ToString[statecount] <> ".m"}], newstate]
+	];
+	statehashassociation[Hash[newstate]] = statecount;
+	If[outputfunction =!= Identity,
+		output[statecount] = outputfunction[newstate]
+	];
+	(* traversal through the automaton *)
+	stateindex = 1;
+	starttime = DateObject[];
+	If[TrueQ[OptionValue[Monitor]] && 10 < $VersionNumber < 11,
+		Message[Monitor::abort]
+	];
+	(* For automata that don't fit in memory, Reap (not Join) takes a long time to assemble the edge list. *)
+	edges = Join @@ Reap[
+		If[TrueQ[OptionValue[Monitor]] && !(10 < $VersionNumber < 11), Monitor, List][
+			While[stateindex <= statecount,
+				currentstate = If[memorystorage,
+					state[stateindex],
+					Import[FileNameJoin[{directory, ToString[stateindex] <> ".m"}]]
+				];
+				Sow[
+					Function[letter,
+						newstate = newstatefunction[currentstate, letter];
+(* TODO Do associations do their own hashing, so that manual hashing is actually less efficient? *)
+						newstatehash = Hash[newstate];
+(* Is this faster than my hacky hashing if  state  is an association?
+						newstateindex = Replace[FirstPosition[state, newstate], {Key[i_]} :> i];
+*)
+						newstateindex = statehashassociation[newstatehash];
+						If[
+							And[
+								checkstatesameness,
+								!MissingQ[newstateindex],
+								If[memorystorage,
+									state[newstateindex],
+									Import[FileNameJoin[{directory, ToString[newstateindex] <> ".m"}]]
+								] =!= newstate
+							]
+							,
+(* xxx this isn't really ideal; should be able to recover by checking the full states.  but then we lose speed, since the association needs distinct keys *)
+(* TODO Substitute the function that's calling StateAutomaton in for StateAutomaton here? *)
+							Message[StateAutomaton::hash, newstatehash];
+							newstateindex = Missing["NotFound"]
+						];
+						{
+							stateindex -> If[MissingQ[newstateindex],
+								statecount++;
+								If[memorystorage,
+									state[statecount] = newstate,
+									Export[FileNameJoin[{directory, ToString[statecount] <> ".m"}], newstate]
+								];
+								statehashassociation[newstatehash] = statecount;
+								If[outputfunction =!= Identity,
+									output[statecount] = outputfunction[newstate]
+								];
+								statecount
+								,
+								newstateindex
+							],
+							letter
+						}
+					] /@ inputalphabet
+				];
+				If[!checkstatesameness,
+					If[memorystorage,
+						Unset[state[stateindex]],
+						DeleteFile[FileNameJoin[{directory, ToString[stateindex] <> ".m"}]]
+					]
+				];
+				stateindex++
+			],
+			AutomatonProgress[starttime, stateindex, statecount]
+		];
+		If[checkstatesameness,
+(* keep this? *)
+If[TrueQ[OptionValue[Monitor]],
+		PrintTemporary["Clearing states"]
+];
+			If[memorystorage,
+				(* Unsetting the states one at a time seems to be better than  Clear[state]  for avoiding a time-consuming memory spike when states have been swapped to disk. *)
+				Unset[state[#]] & /@ Range[statecount, 1, -1],
+				DeleteFile[FileNameJoin[{directory, ToString[#] <> ".m"}] & /@ Range[statecount]]
+			]
+		];
+	][[2, 1]];
+(* keep this? *)
+If[TrueQ[OptionValue[Monitor]],
+	PrintTemporary["Constructing automaton"]
+];
+	automaton = If[outputfunction =!= Identity,
+		Automaton[edges, 1, Normal[output]],
+		Automaton[edges, 1]
+	];
+	If[TrueQ[OptionValue[ExplicitInputAlphabet]],
+		AppendTo[automaton, InputAlphabet -> inputalphabet]
+	];
+	If[TrueQ[OptionValue[MinimizeComplexity]],
+		If[TrueQ[OptionValue[Monitor]],
+			PrintTemporary["Minimizing"]
+		];
+		automaton = AutomatonMinimize[automaton]
+(*
+		automaton = AutomatonMinimize[automaton, IndexedStateNames -> OptionValue[IndexedStateNames]],
+		If[TrueQ[OptionValue[IndexedStateNames]],
+			automaton = IndexAutomaton[automaton]
+		]
+*)
+	];
+	automaton
+]
+Options[StateAutomaton] = {
+	ExplicitInputAlphabet -> False,
+	HashStateNames -> False,
+(*
+	IndexedStateNames -> True,
+*)
+	MinimizeComplexity -> True,
+	Monitor -> False,
+	StateStorage -> "Memory"
+}
+(* TODO Should this tell the user to use a different option? *)
+StateAutomaton::hash = "Hash value `1` occurs for two distinct states; resulting automaton may not be correct."
+
+(*** end automaton construction functions ***)
+
+
 (*** numeration system support functions ***)
 
 (* ArithmeticSubsequences determines the possible ways of extending a tuple of prefixes by one digit each so that there exist canonical representations with the new prefixes. *)
@@ -1782,7 +2227,7 @@ CanonicalPrefixQ[{__, _, 2}, LinearNumerationSystem[{2, 0, 0, -1}, {1, 3, 7, 14}
 	False
 *)
 (* I guess in general there will be an automaton accepting the canonical representations.
-CanonicalPrefixQ[prefix_, LinearNumerationSystem[kernel_, initialterms_]] :=
+CanonicalPrefixQ[prefix_, LinearNumerationSystem[kernel_, initialconditions_]] :=
 	xxx
 *)
 CanonicalPrefixQ[_, _] :=
@@ -1812,14 +2257,15 @@ NumerationSystemBasisFunction["Tribonacci"] =
 NumerationSystemBasisFunction[LinearNumerationSystem[{2, 0, 0, -1}, {1, 3, 7, 14}]] =
 	TribonacciPartialSum
 *)
-NumerationSystemBasisFunction[LinearNumerationSystem[kernel_, initialterms_]] := NumerationSystemBasisFunction[LinearNumerationSystem[kernel, initialterms]] =
+NumerationSystemBasisFunction[LinearNumerationSystem[kernel_, initialconditions_]] := NumerationSystemBasisFunction[LinearNumerationSystem[kernel, initialconditions]] =
 (* LinearRecurrence is slower than MatrixPower for computing a single term.
-	First[LinearRecurrence[kernel, initialterms, {# + 1, # + 1}]] &
+	First[LinearRecurrence[kernel, initialconditions, {# + 1, # + 1}]] &
 *)
 (* xxx But this is still too slow for use in ExtractSubarray.
    We need to remember values, so maybe I need a NumerationSystemBasisElement instead, which I think is what I had earlier. *)
+(* TODO introduce a CompanionMatrix function? *)
 With[{matrix = Append[Rest[IdentityMatrix[Length[kernel]]], Reverse[kernel]]},
-	First[MatrixPower[matrix, #].initialterms] &
+	First[MatrixPower[matrix, #].initialconditions] &
 ]
 
 (* If we introduce any numeration system where the digit list does not contain 0, then PadRight in RegularSequence will need to change.
@@ -1833,7 +2279,7 @@ NumerationSystemDigitList[LinearNumerationSystem[{2, 0, 0, -1}, {1, 3, 7, 14}]] 
 	{0, 1, 2}
 *)
 (* For a general linear numeration system the nth digit can be at most  Floor[(U_{n+1} - 1)/U_n] .  But how do I compute the max of those?  (Or even bound that max from above?)
-NumerationSystemDigitList[LinearNumerationSystem[kernel_, initialterms_]] :=
+NumerationSystemDigitList[LinearNumerationSystem[kernel_, initialconditions_]] :=
 	Range[0, xxx]
 *)
 
@@ -2030,7 +2476,7 @@ RegularSequenceObjectQ[RegularSequence[u_, matrixarray_, v_, numerationsystem : 
 	RegularSequenceObjectQ[RegularSequence[u, matrixarray, v, {numerationsystem}]]
 RegularSequenceObjectQ[_] = False
 
-SequenceNumerationSystemList[(BaumSweet | RudinShapiro | ThueMorse | SternBrocot | BitLength | BitShiftRight)[argument_], n_] /; !FreeQ[argument, n] :=
+SequenceNumerationSystemList[(BaumSweet | RudinShapiro | ThueMorse | GlaisherGould | SternBrocot | BitLength | BitShiftRight)[argument_], n_] /; !FreeQ[argument, n] :=
 	{2}
 (* These don't test that the numeration system is valid, since the functions that call SequenceNumerationSystemList include a test. *)
 (* XXX right?  related: *)
@@ -2565,6 +3011,12 @@ AlgebraicSequenceReduce[
 					Function[\[FormalY], (1 - \[FormalX] - 2 \[FormalX]^2) \[FormalY] - \[FormalX]],
 				LucasL,
 					Function[\[FormalY], (1 - \[FormalX] - \[FormalX]^2) \[FormalY] - (2 - \[FormalX])],
+(*
+				PadovanNumber,
+					,
+				PellNumber,
+					,
+*)
 				Tribonacci,
 					Function[\[FormalY], (1 - \[FormalX] - \[FormalX]^2 - \[FormalX]^3) \[FormalY] - \[FormalX]^2]
 			],
@@ -2750,13 +3202,10 @@ AlgebraicSequenceAutomaton[
 ] :=
 Module[
 	{
-		polynomial, seriesvariables, variables, y, z,
-		yannihilator, y1coefficient, yseriesdimensions, yseries, z1expressedinhigherpowers, minexponents, zexponentexponent, zseries,
-		edges, statecount, state, statehashassociation, stateindex, output, automaton, newstate, newstatehash, newstateindex, starttime,
-		checkstatesameness, memorystorage, directory, failed
+		polynomial, seriesvariables, variables, y, z, failed,
+		yannihilator, y1coefficient, yseriesdimensions, yseries, z1expressedinhigherpowers, minexponents, zexponentexponent, zseries
 	},
 	failed = Catch[
-		checkstatesameness = !TrueQ[OptionValue[HashStateNames]];
 		polynomial = polynomialfunction[y];
 		seriesvariables = SeriesVariables[root];
 		variables = Append[seriesvariables, z];
@@ -2945,77 +3394,50 @@ Print["yseries:", Tab, yseries];
 (*
 Print["zseries = yseries/y1coefficient:", Tab, zseries];
 *)
-		memorystorage = Replace[OptionValue[StateStorage],
-			{
-				"Disk" | {"Disk", ___, "Directory" -> Automatic, ___} :> (
-					directory = $TemporaryDirectory;
-					False
-				),
-			 	{"Disk", ___, "Directory" -> dir_, ___} :> (
-					directory = dir;
-					False
-				),
-				"Memory" ->
-					True,
-				_ ->
-					False
-			}
-		];
-		statecount = 1;
+		False
+	];
+	EdgeListAutomaton[
+		{
+			Function[currentstate,
+				Last[Reap[
+					Function[coefficientrule,
+						With[{exponentquotientremainders = QuotientRemainder[coefficientrule[[1]], modulus]},
+							Sow[
+								First /@ exponentquotientremainders -> coefficientrule[[2]],
+								{Last /@ Most[exponentquotientremainders]}
+							];
+						]
+					] /@
+						CoefficientRules[
+							(* Replace z^1 with z1expressedinhigherpowers. *)
+							currentstate + Coefficient[currentstate, z, 1] (z1expressedinhigherpowers - z),
+							variables,
+							Modulus -> modulus
+						];
+					,
+					Tuples[Range[0, modulus - 1], Length[seriesvariables]]
+				]]
+			],
+			Function[monomialrules, 
+				(* Reap isn't consistent. *)
+				If[monomialrules == {},
+					0,
+					FromCoefficientRules[First[monomialrules], variables]
+				]
+			],
+			Function[index,
+				DigitList[index[[1]] - 1, modulus, Length[seriesvariables]]
+			]
+		},
 		(* Substitute  z = y/y1coefficient . *)
-		newstate = Expand[y1coefficient z];
-		If[memorystorage,
-			state[statecount] = newstate,
-			Export[FileNameJoin[{directory, ToString[statecount] <> ".m"}], newstate]
-		];
-		statehashassociation = Association[];
-		statehashassociation[Hash[newstate]] = statecount;
-		output = Association[];
-		output[statecount] = Expand[Normal[newstate /. z -> zseries], Modulus -> modulus] /. Alternatives @@ seriesvariables -> 0;
-		stateindex = 1;
-		starttime = DateObject[];
-		If[TrueQ[OptionValue[Monitor]] && 10 < $VersionNumber < 11,
-			Message[Monitor::abort]
-		];
-		edges = Join @@ Reap[
-			If[TrueQ[OptionValue[Monitor]] && !(10 < $VersionNumber < 11), Monitor, List][
-				While[stateindex <= statecount,
-					Sow[
-						MapIndexed[
-							Function[{monomialrules, index},
-								(* Reap isn't consistent. *)
-								newstate = If[monomialrules == {},
-									0,
-									FromCoefficientRules[First[monomialrules], variables]
-								];
-								newstatehash = Hash[newstate];
-								newstateindex = statehashassociation[newstatehash];
-								If[
-									And[
-										checkstatesameness,
-										!MissingQ[newstateindex],
-										If[memorystorage,
-											state[newstateindex],
-											Import[FileNameJoin[{directory, ToString[newstateindex] <> ".m"}]]
-										] =!= newstate
-									]
-									,
-									Message[AutomaticSequenceReduce::hash, newstatehash];
-									newstateindex = Missing["NotFound"]
-								];
-								{
-									stateindex -> If[MissingQ[newstateindex],
-										statecount++;
-										If[memorystorage,
-											state[statecount] = newstate,
-											Export[FileNameJoin[{directory, ToString[statecount] <> ".m"}], newstate]
-										];
-										statehashassociation[newstatehash] = statecount;
-										(* TODO Is replacing  Alternatives @@ seriesvariables -> 0  faster than using Normal followed by ConstantTerm? *)
-										(* The modulus is important here because in many cases it turns a Laurent series, for example with a term p/x, into a power series modulo p. *)
-										(* TODO Do I need RationalMod if I've already applied SeriesMod?  Not for p==2 but what if p==3 and y1coefficient==2+stuff ? *)
+		Expand[y1coefficient z],
+		Length[seriesvariables],
+		Function[newstate,
+			(* TODO Is replacing  Alternatives @@ seriesvariables -> 0  faster than using Normal followed by ConstantTerm? *)
+			(* The modulus is important here because in many cases it turns a Laurent series, for example with a term p/x, into a power series modulo p. *)
+			(* TODO Do I need RationalMod if I've already applied SeriesMod?  Not for p==2 but what if p==3 and y1coefficient==2+stuff ? *)
 (*
-										state[i] = (*RationalMod[*)SeriesMod[state[i] /. z -> zseries, p] /. Alternatives @@ seriesvariables -> 0(*, p]*),
+			state[i] = (*RationalMod[*)SeriesMod[state[i] /. z -> zseries, p] /. Alternatives @@ seriesvariables -> 0(*, p]*),
 *)
 (* testprint *)
 If[
@@ -3025,71 +3447,18 @@ If[
 	],
 	Print[Style["not enough terms", Red], Tab, newstate /. z -> zseries]
 ];
-										output[statecount] = Expand[Normal[newstate /. z -> zseries], Modulus -> modulus] /. Alternatives @@ seriesvariables -> 0;
-										statecount
-										,
-										newstateindex
-									],
-									DigitList[index[[1]] - 1, modulus, Length[seriesvariables]]
-								}
-							],
-							Last[Reap[
-								(With[{exponentquotientremainders = QuotientRemainder[#[[1]], modulus]},
-									Sow[First /@ exponentquotientremainders -> #[[2]], {Last /@ Most[exponentquotientremainders]}];
-								] &) /@
-									CoefficientRules[
-										(* Replace z^1 with z1expressedinhigherpowers. *)
-										state[stateindex] + Coefficient[state[stateindex], z, 1] (z1expressedinhigherpowers - z),
-										variables,
-										Modulus -> modulus
-									];,
-								Tuples[Range[0, modulus - 1], Length[seriesvariables]]
-							]]
-						]
-					];
-					If[!checkstatesameness,
-						If[memorystorage,
-							Unset[state[stateindex]],
-							DeleteFile[FileNameJoin[{directory, ToString[stateindex] <> ".m"}]]
-						]
-					];
-					stateindex++
-				],
-				Column[{
-					Row[{"Processing state ", stateindex, " of ", statecount}],
-					ProgressIndicator[(stateindex - 1)/statecount],
-					If[stateindex == 1,
-						Row[{}],
-						Row[{"Processing known states will finish at ", DatePlus[starttime, statecount/(stateindex - 1) DateDifference[starttime, DateObject[]]]}]
-					]
-				}]
-			];
-			If[checkstatesameness,
-				If[memorystorage,
-					(* Unsetting the states one at a time seems to be better than  Clear[state]  for avoiding a time-consuming memory spike when states have been swapped to disk. *)
-					Unset[state[#]] & /@ Range[statecount, 1, -1],
-					DeleteFile[FileNameJoin[{directory, ToString[#] <> ".m"}] & /@ Range[statecount]]
-				]
-			];
-		][[2, 1]];
-		If[TrueQ[OptionValue[FlattenInputAlphabet]] && Length[seriesvariables] == 1,
-			edges = MapAt[First, 2] /@ edges
-		];
-		automaton = Automaton[edges, 1, Normal[output]];
-		If[TrueQ[OptionValue[Minimize]],
-			If[TrueQ[OptionValue[Monitor]],
-				PrintTemporary["Minimizing"]
-			];
-			automaton = AutomatonMinimize[automaton]
-		];
-		False
-	];
-	automaton /; !failed
+			Expand[
+				Normal[newstate /. z -> zseries],
+				Modulus -> modulus
+			] /. Alternatives @@ seriesvariables -> 0
+		],
+		options
+	] /; !failed
 ]
 Options[AlgebraicSequenceAutomaton] = {
 	FlattenInputAlphabet -> True,
 	HashStateNames -> False,
-	Minimize -> True,
+	MinimizeComplexity -> True,
 	Monitor -> False,
 	StateStorage -> "Memory"
 }
@@ -3116,14 +3485,12 @@ ConstantTermSequenceAutomaton[
 	] :=
 Module[
 	{
-		p, alpha, stabilizedpowerpolynomial, stabilizedpowerpolynomialpowersmatrix, newstatesfunction,
+		p, alpha, stabilizedpowerpolynomial, stabilizedpowerpolynomialpowersmatrix, newstatesfunction, initialstate,
 		minexponents, maxexponents, dimensions, annihilatordata, slot,
-		currentstate, powerpolynomial, factorpolynomial, newpowerpolynomial, newstates, newstateminexponents, newstatemaxexponents,
-		edges, statecount, state, statehashassociation, stateindex, output, automaton, newstatehash, newstateindex, starttime,
-		checkstatesameness, usepolynomialsonly, compressstatenames, memorystorage, directory
+		powerpolynomial, factorpolynomial, newpowerpolynomial, newstates, newstateminexponents, newstatemaxexponents, binnedmonomials,
+		usepolynomialsonly, compressstatenames
 	},
 	{p, alpha} = NumberTheory`PrimePower[modulus];
-	checkstatesameness = !TrueQ[OptionValue[HashStateNames]];
 (* xxx setting this to True seems to give a speed improvement.  (it prevents newstatesfunction from being defined) *)
 usepolynomialsonly = True;
 	If[Length[variables] == 1,
@@ -3284,129 +3651,47 @@ Print[Style["COMPUTING annihilatordata", Red]];
 (*
 If[usepolynomialsonly, Print["here"]];
 *)
-	statecount = 1;
-	state[statecount] = "pair" @@ Expand[{originalpowerpolynomial, originalfactorpolynomial}, Modulus -> modulus];
-(*
-Print[statecount, Tab, state[statecount]];
-*)
-	output = Association[];
-	If[First[state[statecount]] === stabilizedpowerpolynomial,
+	initialstate = "pair" @@ Expand[{originalpowerpolynomial, originalfactorpolynomial}, Modulus -> modulus];
+	If[First[initialstate] === stabilizedpowerpolynomial,
 		(* Represent the initial state by a single Laurent polynomial. *)
 (*
 Print[Tab, Style["CONVERTING TO LAURENT POLYNOMIAL", Purple]];
 *)
-		state[statecount] = Last[state[statecount]];
+		initialstate = Last[initialstate];
 (*
-Print[statecount, Tab, state[statecount]];
+Print[statecount, Tab, initialstate];
 *)
 		If[compressstatenames,
 (*
 Print[statecount, Tab, "minimizing representation"];
-Print[laurentPolynomialMod[state[statecount], variables, annihilatordata, modulus]];
+Print[laurentPolynomialMod[initialstate, variables, annihilatordata, modulus]];
 *)
-			state[statecount] = LaurentPolynomialMod[state[statecount], variables, annihilatordata, modulus]
+			initialstate = LaurentPolynomialMod[initialstate, variables, annihilatordata, modulus]
 (*
-; Print[statecount, Tab, state[statecount]]
+; Print[statecount, Tab, initialstate]
 *)
 		];
-		output[statecount] = ConstantTerm[state[statecount], variables];
 If[!usepolynomialsonly,
-		{newstateminexponents, newstatemaxexponents} = Transpose[Exponent[state[statecount], variables, MinMax[{##}] &]];
+		{newstateminexponents, newstatemaxexponents} = Transpose[Exponent[initialstate, variables, MinMax[{##}] &]];
 		If[And @@ Thread[minexponents <= newstateminexponents] && And @@ Thread[newstatemaxexponents <= maxexponents],
 			(* Represent the initial state by a (flattened) coefficient list instead of a Laurent polynomial. *)
-			state[statecount] = Flatten[Normal[SparseArray[
+			initialstate = Flatten[Normal[SparseArray[
 				MapAt[# - minexponents + 1 &, 1] /@ LaurentPolynomialCoefficientRules[
-					state[statecount],
+					initialstate,
 					variables
 				],
 				dimensions
 			]]]
 		]
 ]
-		,
-		output[statecount] = ConstantTerm[Last[state[statecount]], variables]
 	];
-(* TODO check that we actually get a speed benefit by testing inequality of hash values; is it only beneficial once we've started paging to disk? *)
-	statehashassociation = Association[];
-	statehashassociation[Hash[state[statecount]]] = statecount;
-	memorystorage = Replace[OptionValue[StateStorage],
+	EdgeListAutomaton[
 		{
-			"Disk" | {"Disk", ___, "Directory" -> Automatic, ___} :> (
-				directory = $TemporaryDirectory;
-				False
-			),
-		 	{"Disk", ___, "Directory" -> dir_, ___} :> (
-				directory = dir;
-				False
-			),
-			"Memory" ->
-				True,
-			_ ->
-				False
-		}
-	];
-	If[!memorystorage,
-		Export[FileNameJoin[{directory, ToString[statecount] <> ".m"}], state[statecount]];
-		Unset[state[statecount]]
-	];
-	stateindex = 1;
-	starttime = DateObject[];
-	If[TrueQ[OptionValue[Monitor]] && 10 < $VersionNumber < 11,
-		Message[Monitor::abort]
-	];
-	edges = Join @@ Reap[
-		If[TrueQ[OptionValue[Monitor]] && !(10 < $VersionNumber < 11), Monitor, List][
-			While[stateindex <= statecount,
-				currentstate = If[memorystorage,
-					state[stateindex],
-					Import[FileNameJoin[{directory, ToString[stateindex] <> ".m"}]]
-				];
-				Sow[
-					MapIndexed[
-						Function[{newstate, index},
-							newstatehash = Hash[newstate];
-							newstateindex = statehashassociation[newstatehash];
-							If[
-								And[
-									checkstatesameness,
-									!MissingQ[newstateindex],
-									If[memorystorage,
-										state[newstateindex],
-										Import[FileNameJoin[{directory, ToString[newstateindex] <> ".m"}]]
-									] =!= newstate
-								]
-								,
-								Message[AutomaticSequenceReduce::hash, newstatehash];
-								newstateindex = Missing["NotFound"]
-							];
-							{
-								stateindex -> If[MissingQ[newstateindex],
-									statecount++;
-									If[memorystorage,
-(*
-Print[statecount, Tab, newstate];
-*)
-										state[statecount] = newstate,
-										Export[FileNameJoin[{directory, ToString[statecount] <> ".m"}], newstate]
-									];
-									statehashassociation[newstatehash] = statecount;
-									output[statecount] = Switch[newstate,
-										_List, Extract[newstate, -minexponents + 1],
-(* xxx does this assume something about  First[newstate] ?  like that its constant term is 1? *)
-										"pair"[_, _], ConstantTerm[Last[newstate], variables],
-										_, ConstantTerm[newstate, variables]
-									];
-									statecount
-									,
-									newstateindex
-								],
-								index[[1]] - 1
-							}
-						],
-						Switch[currentstate,
+			Function[currentstate,
+				Switch[currentstate,
 
-							_List,
-							(* The current state is represented by a (flattened) coefficient list. *)
+					_List,
+					(* The current state is represented by a (flattened) coefficient list. *)
 (*
 Print[Tab, Style["COEFFICIENT LIST", Purple]];
 Print[currentstate];
@@ -3414,61 +3699,61 @@ Print["hello hello hello"];
 Pause[1];
 Quit[];
 *)
-							newstates = newstatesfunction @@ currentstate;
-							If[compressstatenames,
+					newstates = newstatesfunction @@ currentstate;
+					If[compressstatenames,
 (* XXX TODO Is it faster to apply Mod after VectorReduceMod rather than inside the Fold? *)
-								newstates = (*EchoFunction["list", Function[asdf, # -> asdf]]@*)VectorReduceMod[#, annihilatordata, modulus] & /@ newstates
-							];
-							newstates
-							,
+						newstates = (*EchoFunction["list", Function[asdf, # -> asdf]]@*)VectorReduceMod[#, annihilatordata, modulus] & /@ newstates
+					];
+					newstates
+					,
 
-							"pair"[_, _],
+					"pair"[_, _],
 (*
 Print[Tab, Style["PAIR", Purple]];
 *)
 (*
 Print[stateindex, Tab, "list"];
 *)
-							(* The current state is represented by a pair of Laurent polynomials; the power polynomial hasn't stabilized yet. *)
-							{powerpolynomial, factorpolynomial} = List @@ currentstate;
-							newpowerpolynomial = Expand[powerpolynomial^p, Modulus -> modulus];
-							newstates = Expand[powerpolynomial^Range[0, p - 1] factorpolynomial, Modulus -> modulus];
-							If[And @@ Divisible[Join @@ First /@ LaurentPolynomialCoefficientRules[newpowerpolynomial, variables], p],
+					(* The current state is represented by a pair of Laurent polynomials; the power polynomial hasn't stabilized yet. *)
+					{powerpolynomial, factorpolynomial} = List @@ currentstate;
+					newpowerpolynomial = Expand[powerpolynomial^p, Modulus -> modulus];
+					newstates = Expand[powerpolynomial^Range[0, p - 1] factorpolynomial, Modulus -> modulus];
+					If[And @@ Divisible[Join @@ First /@ LaurentPolynomialCoefficientRules[newpowerpolynomial, variables], p],
 (* xxx for Motkin numbers, this seems to occur precisely for primes (and never prime powers), and only occurs once.  Why is that?  Can we use it? *)
-								newpowerpolynomial = Cartier0WithoutSelect[newpowerpolynomial, variables, p];
-								newstates = Cartier0[#, variables, p] & /@ newstates
-							];
-							If[newpowerpolynomial === stabilizedpowerpolynomial,
-								(* The power polynomial has now stabilized for the new state, so we can use the annihilators. *)
-								If[compressstatenames,
-									newstates = (*EchoFunction["pair", Function[asdf, # -> asdf]]@*)LaurentPolynomialMod[#, variables, annihilatordata, modulus] & /@ newstates
-								];
+						newpowerpolynomial = Cartier0WithoutSelect[newpowerpolynomial, variables, p];
+						newstates = Cartier0[#, variables, p] & /@ newstates
+					];
+					If[newpowerpolynomial === stabilizedpowerpolynomial,
+						(* The power polynomial has now stabilized for the new state, so we can use the annihilators. *)
+						If[compressstatenames,
+							newstates = (*EchoFunction["pair", Function[asdf, # -> asdf]]@*)LaurentPolynomialMod[#, variables, annihilatordata, modulus] & /@ newstates
+						];
 If[!usepolynomialsonly,
-								newstates = Function[newstate,
-									{newstateminexponents, newstatemaxexponents} = Transpose[Exponent[newstate, variables, MinMax[{##}] &]];
-									If[And @@ Thread[minexponents <= newstateminexponents] && And @@ Thread[newstatemaxexponents <= maxexponents],
-										(* Represent the new state by a (flattened) coefficient list instead of a Laurent polynomial. *)
-										Flatten[Normal[SparseArray[
-											MapAt[# - minexponents + 1 &, 1] /@ LaurentPolynomialCoefficientRules[
-												newstate,
-												variables
-											],
-											dimensions
-										]]],
-										newstate
-									]
-								] /@ newstates
+						newstates = Function[newstate,
+							{newstateminexponents, newstatemaxexponents} = Transpose[Exponent[newstate, variables, MinMax[{##}] &]];
+							If[And @@ Thread[minexponents <= newstateminexponents] && And @@ Thread[newstatemaxexponents <= maxexponents],
+								(* Represent the new state by a (flattened) coefficient list instead of a Laurent polynomial. *)
+								Flatten[Normal[SparseArray[
+									MapAt[# - minexponents + 1 &, 1] /@ LaurentPolynomialCoefficientRules[
+										newstate,
+										variables
+									],
+									dimensions
+								]]],
+								newstate
+							]
+						] /@ newstates
 ]
-								,
-								newstates = "pair"[newpowerpolynomial, #] & /@ newstates
-							];
-							newstates
-							,
+						,
+						newstates = "pair"[newpowerpolynomial, #] & /@ newstates
+					];
+					newstates
+					,
 
-							_,
-							(* The current state is represented by a Laurent polynomial. *)
-(* This can happen, right?  The power polynomial can stabilize without the factor polynomial being small enough yet?
-   Yes, it happens for Motzkin numbers modulo 8. *)
+					_,
+					(* The current state is represented by a Laurent polynomial. *)
+					(* This can happen, since the power polynomial can stabilize without the factor polynomial being small enough yet.
+					   For example, this happens for Motzkin numbers modulo 8. *)
 (*
 Print[Tab, Style["LAURENT POLYNOMIAL", Purple], Tab, stateindex, Tab, currentstate];
 *)
@@ -3477,34 +3762,34 @@ If[!FreeQ[currentstate, Quotient], Print[Quotient, Tab, currentstate]; Pause[1];
 (*
 Print[stateindex, Tab, "polynomial"];
 *)
-							(* Bin monomials by their exponents modulo p. *)
+					(* Bin monomials by their exponents modulo p. *)
 (*
 tempstate = currentstate;
 *)
-							currentstate = Replace[
-								Last[Reap[
-									Function[monomial,
-										Sow[monomial, {Mod[Exponent[monomial, variables], p]}];
-									] /@ FastMonomialList[currentstate],
-									Tuples[Range[0, p - 1], Length[variables]]
-								]],
-								{{} -> 0, {monomiallist_} :> Total[monomiallist]},
-								{1}
-							];
+					binnedmonomials = Replace[
+						Last[Reap[
+							Function[monomial,
+								Sow[monomial, {Mod[Exponent[monomial, variables], p]}];
+							] /@ FastMonomialList[currentstate],
+							Tuples[Range[0, p - 1], Length[variables]]
+						]],
+						{{} -> 0, {monomiallist_} :> Total[monomiallist]},
+						{1}
+					];
 (*
 If[usepolynomialsonly, Print["newstate", Tab, newstate]];
 *)
-							(* Multiply the current state by each power of  stabilizedpowerpolynomial ,
-							   keeping only monomials with exponents that are congruent to 0. *)
-							newstates = If[compressstatenames,
+					(* Multiply the current state by each power of  stabilizedpowerpolynomial ,
+					   keeping only monomials with exponents that are congruent to 0. *)
+					newstates = If[compressstatenames,
 (*
 Print[laurentPolynomialMod[cartier0WithoutSelect[#, variables, p], variables, polynomialannihilatordata, modulus]];
 *)
-								LaurentPolynomialMod[(*EchoFunction["polynomial", Function[asdf, asdf -> LaurentPolynomialMod[asdf, variables, annihilatordata, modulus]]]@*)Cartier0WithoutSelect[#, variables, p], variables, annihilatordata, modulus] & /@
-									Expand[stabilizedpowerpolynomialpowersmatrix.currentstate, Modulus -> modulus],
-								Cartier0WithoutSelect[#, variables, p] & /@
-									Expand[stabilizedpowerpolynomialpowersmatrix.currentstate, Modulus -> modulus]
-							];
+						LaurentPolynomialMod[(*EchoFunction["polynomial", Function[asdf, asdf -> LaurentPolynomialMod[asdf, variables, annihilatordata, modulus]]]@*)Cartier0WithoutSelect[#, variables, p], variables, annihilatordata, modulus] & /@
+							Expand[stabilizedpowerpolynomialpowersmatrix.binnedmonomials, Modulus -> modulus],
+						Cartier0WithoutSelect[#, variables, p] & /@
+							Expand[stabilizedpowerpolynomialpowersmatrix.binnedmonomials, Modulus -> modulus]
+					];
 (*
 {newstateminexponents, newstatemaxexponents} = Transpose[Exponent[tempstate, variables, MinMax[{##}] &]];
 If[
@@ -3526,8 +3811,8 @@ If[
 		]
 	],
 	Print["current state:", Tab, tempstate];
-	Print[currentstate];
-	Print[currentstate[[10]]];
+	Print[binnedmonomials];
+	Print[binnedmonomials[[10]]];
 	Print[newstates];
 	Print[newstates[[10]]];
 (*
@@ -3567,142 +3852,60 @@ If[
 ];
 *)
 If[!usepolynomialsonly,
-							newstates = Function[newstate,
-								{newstateminexponents, newstatemaxexponents} = Transpose[Exponent[newstate, variables, MinMax[{##}] &]];
-								If[And @@ Thread[minexponents <= newstateminexponents] && And @@ Thread[newstatemaxexponents <= maxexponents],
-									(* Represent the new state by a (flattened) coefficient list instead of a Laurent polynomial. *)
-									Flatten[Normal[SparseArray[
-										MapAt[# - minexponents + 1 &, 1] /@ LaurentPolynomialCoefficientRules[
-											newstate,
-											variables
-										],
-										dimensions
-									]]],
-									newstate
-								]
-							] /@ newstates;
-];
-							newstates
-
+					newstates = Function[newstate,
+						{newstateminexponents, newstatemaxexponents} = Transpose[Exponent[newstate, variables, MinMax[{##}] &]];
+						If[And @@ Thread[minexponents <= newstateminexponents] && And @@ Thread[newstatemaxexponents <= maxexponents],
+							(* Represent the new state by a (flattened) coefficient list instead of a Laurent polynomial. *)
+							Flatten[Normal[SparseArray[
+								MapAt[# - minexponents + 1 &, 1] /@ LaurentPolynomialCoefficientRules[
+									newstate,
+									variables
+								],
+								dimensions
+							]]],
+							newstate
 						]
-					]
-				];
-				If[!checkstatesameness,
-					If[memorystorage,
-						Unset[state[stateindex]],
-						DeleteFile[FileNameJoin[{directory, ToString[stateindex] <> ".m"}]]
-					]
-				];
-				stateindex++
-			],
-			Column[{
-				Row[{"Processing state ", stateindex, " of ", statecount}],
-				ProgressIndicator[(stateindex - 1)/statecount],
-				If[stateindex == 1,
-					Row[{}],
-					Row[{"Processing known states will finish at ", DatePlus[starttime, statecount/(stateindex - 1) DateDifference[starttime, DateObject[]]]}]
+					] /@ newstates;
+];
+					newstates
+
 				]
-(*
-, Union[Values[output]]
-*)
-			}]
-		];
-(*
-If[compressstatenames,
-(*
-(* min and max degree of states whose power polynomial is the eventual stabilized polynomial *)
-Print[MapAcross[{Min, Max}, Transpose[Table[If[!ListQ[state[n]], Exponent[state[n], First[variables], MinMax[{##}] &], Nothing], {n, statecount}]]]];
-Print[Table[If[!ListQ[state[n]], Exponent[state[n], variables, MinMax[{##}] &], List], {n, statecount}]];
-Print[Multicolumn[Table[state[n], {n, statecount}], 2 p]];
-Print[Table[state[n], {n, statecount}]];
-*)
-Print[Multicolumn[annihilatordata, p]];
-Print[Length[annihilatordata], " annihilators"];
-(* annihilators that we could also mod out by: *)
-Print[Union @@ (Expand[Subtract @@@ Subsets[#, {2}], Modulus -> modulus] &) /@
-  DeleteCases[
-   GatherBy[
-    DeleteCases[Table[state[n], {n, statecount}], _List],
-    Table[ConstantTerm[
-       Expand[# stabilizedpowerpolynomial^n,
-        Modulus -> modulus], variables], {n, 0, 20}] &], {_}]
-];
-Null
-];
-*)
-(*
-Print[Table[state[n], {n, statecount}]];
-*)
-		If[checkstatesameness,
-			If[memorystorage,
-				(* Unsetting the states one at a time seems to be better than  Clear[state]  for avoiding a time-consuming memory spike when states have been swapped to disk. *)
-				Unset[state[#]] & /@ Range[statecount, 1, -1],
-				DeleteFile[FileNameJoin[{directory, ToString[#] <> ".m"}] & /@ Range[statecount]]
+			],
+			Identity,
+			Function[index,
+				{index[[1]] - 1}
 			]
-		];
-	][[2, 1]];
-	automaton = Automaton[edges, 1, Normal[output]];
-	If[TrueQ[OptionValue[Minimize]],
-		If[TrueQ[OptionValue[Monitor]],
-			PrintTemporary["Minimizing"]
-		];
-		automaton = AutomatonMinimize[automaton]
-	];
-	automaton
+		},
+		initialstate,
+		Length[variables],
+		Function[newstate,
+			Switch[newstate,
+				_List, Extract[newstate, -minexponents + 1],
+(* xxx does this assume something about  First[newstate] ?  like that its constant term is 1? *)
+				"pair"[_, _], ConstantTerm[Last[newstate], variables],
+				_, ConstantTerm[newstate, variables]
+			]
+		],
+		Sequence @@ Replace[
+			{options},
+			{
+				(Compile -> _) ->
+					Nothing,
+				(CompressStateNames -> _) ->
+					Nothing
+			},
+			{1}
+		]
+	]
 ]
 Options[ConstantTermSequenceAutomaton] = {
 	Compile -> True,
 	CompressStateNames -> Automatic,
 	HashStateNames -> False,
-	Minimize -> True,
+	MinimizeComplexity -> True,
 	Monitor -> False,
 	StateStorage -> "Memory"
 }
-
-(* not in use; doesn't go here *)
-ConstantTermSequenceTermMod[powerpolynomial_, factorpolynomial_, n_, modulus_?PrimePowerQ, variables_List] /;
-	And[
-		UnsameQ @@ variables,
-		SubsetQ[variables, Variables[{powerpolynomial, factorpolynomial}]],
-		LaurentPolynomialQ[factorpolynomial, variables],
-		LaurentPolynomialQ[factorpolynomial, variables]
-	] :=
-Module[
-	{p, ndigits, newpowerpolynomial, newstate, penultimatestate},
-	p = First[NumberTheory`PrimePower[modulus]];
-	ndigits = DigitList[n, p];
-	penultimatestate = Fold[
-		Function[
-			{currentstate, digit}
-			,
-Print[digit];
-Print[Tab, "newpowerpolynomial"];
-(* xxx in some cases we could save work by not recomputing this if the polynomial has stabilized, but this won't happen generically until alpha steps or whatever *)
-			newpowerpolynomial = Expand[currentstate[[1]]^p, Modulus -> modulus];
-Print[Tab, Hash[newpowerpolynomial]];
-Print[Tab, "newstate"];
-			newstate = Expand[currentstate[[1]]^digit currentstate[[2]], Modulus -> modulus];
-Print[Tab, "LaurentPolynomialCoefficientRules"];
-			If[And @@ Divisible[Join @@ First /@ LaurentPolynomialCoefficientRules[newpowerpolynomial, variables], p],
-(* xxx for Motkin numbers, this seems to occur precisely for primes (and never prime powers), and only occurs once.  Why is that?  Can we use it? *)
-Print[Tab, "Cartier0WithoutSelect"];
-				newpowerpolynomial = Cartier0WithoutSelect[newpowerpolynomial, variables, p];
-Print[Tab, "Cartier0"];
-				newstate = Cartier0[newstate, variables, p]
-			];
-			{newpowerpolynomial, newstate}
-		],
-		Expand[{powerpolynomial, factorpolynomial}, Modulus -> modulus],
-(* xxx if  n==0  this is going to complain *)
-		Most[ndigits]
-	];
-Print[Last[ndigits]];
-(* xxx does this assume something about  First[finalstate] ?  like that its constant term is 1? *)
-	ConstantTerm[
-		Expand[penultimatestate[[1]]^Last[ndigits] penultimatestate[[2]], Modulus -> modulus],
-		variables
-	]
-]
 
 DiagonalSequenceAutomaton[
 	DiagonalSequence[rationalexpression_, variablepartition : {__List}, sequenceoptions : OptionsPattern[]],
@@ -3742,10 +3945,8 @@ DiagonalSequenceAutomaton[
 	] :=
 Module[
 	{
-		p, variables, variablepattern, variablerepresentatives,
-		denominator, denominatorconstantinverse, denominatorfactorlist, denominatorconstantfactor, denominatorexponent, position, denominatorconstantfactorroot, factor,
-		edges, statecount, state, statehashassociation, stateindex, output, automaton, newstate, newstatehash, newstateindex, starttime,
-		degree, checkstatesameness, memorystorage, directory
+		p, variables, variablepattern, variablerepresentatives, degree, initialstate,
+		denominator, denominatorconstantinverse, denominatorfactorlist, denominatorconstantfactor, denominatorexponent, position, denominatorconstantfactorroot, factor
 	},
 	p = First[NumberTheory`PrimePower[modulus]];
 	variables = Join @@ variablepartition;
@@ -3755,7 +3956,6 @@ Module[
 		OptionValue["Degree"],
 		Automatic -> Replace[OptionValue[Method], {"HighDegree" -> "High", "LowDegree" -> "Low"}]
 	];
-	checkstatesameness = !TrueQ[OptionValue[HashStateNames]];
 	denominator = Denominator[rationalexpression];
 	(* Make the constant term 1, but don't expand because  Expand[denominator^exponent, Modulus -> modulus]
 	   is faster when  denominator  is factored. *)
@@ -3820,10 +4020,9 @@ Print["didn't manage to absorb the constant factor"];
 		{{} -> 0, {list_} :> Total[list]},
 		{1}
 	];
-	statecount = 1;
 	If[degree === "High",
 		If[denominatorexponent == modulus,
-			newstate = Expand[denominatorconstantinverse Numerator[rationalexpression], Modulus -> modulus]
+			initialstate = Expand[denominatorconstantinverse Numerator[rationalexpression], Modulus -> modulus]
 			,
 			(* We can use the binned monomials of  factor . *)
 			If[TrueQ[OptionValue[Monitor]],
@@ -3832,7 +4031,7 @@ Print["didn't manage to absorb the constant factor"];
 					PrintTemporary[Row[{"Expanding ", "numerator", " for the initial state"}]]
 				]
 			];
-			newstate = Expand[denominatorconstantinverse Numerator[rationalexpression] denominator^(modulus/p - denominatorexponent), Modulus -> modulus];
+			initialstate = Expand[denominatorconstantinverse Numerator[rationalexpression] denominator^(modulus/p - denominatorexponent), Modulus -> modulus];
 			If[TrueQ[OptionValue[Monitor]],
 				PrintTemporary[Row[{
 					"Binning monomials of ", Inactive[Times]["numerator", "denominator"^(modulus/p - denominatorexponent)],
@@ -3840,7 +4039,7 @@ Print["didn't manage to absorb the constant factor"];
 				}]]
 			];
 			(* Multiply by  factor , keeping only monomials with exponents that are congruent to each other (according to the diagonal we're interested in). *)
-			newstate = CongruentMonomialTimes[FastMonomialList[newstate], factor, p, variablepartition, Modulus -> modulus]
+			initialstate = CongruentMonomialTimes[FastMonomialList[initialstate], factor, p, variablepartition, Modulus -> modulus]
 		]
 		,
 		If[TrueQ[OptionValue[Monitor]] && modulus/p != denominatorexponent,
@@ -3849,223 +4048,89 @@ Print["didn't manage to absorb the constant factor"];
 				PrintTemporary[Row[{"Expanding ", "numerator", " for the initial state"}]]
 			]
 		];
-		newstate = Expand[denominatorconstantinverse Numerator[rationalexpression] denominator^(modulus/p - denominatorexponent), Modulus -> modulus]
+		initialstate = Expand[denominatorconstantinverse Numerator[rationalexpression] denominator^(modulus/p - denominatorexponent), Modulus -> modulus]
 	];
-	memorystorage = Replace[OptionValue[StateStorage],
+	EdgeListAutomaton[
 		{
-			"Disk" | {"Disk", ___, "Directory" -> Automatic, ___} :> (
-				directory = $TemporaryDirectory;
-				False
-			),
-		 	{"Disk", ___, "Directory" -> dir_, ___} :> (
-				directory = dir;
-				False
-			),
-			"Memory" ->
-				True,
-			_ ->
-				False
-		}
-	];
-	If[memorystorage,
-		state[statecount] = newstate,
-		Export[FileNameJoin[{directory, ToString[statecount] <> ".m"}], newstate]
-	];
-	statehashassociation = Association[];
-	statehashassociation[Hash[newstate]] = statecount;
-	output = Association[];
-	output[statecount] = ConstantTerm[newstate, variables];
-	stateindex = 1;
-(*
-unprocessedstatecounts = {};
-*)
-	starttime = DateObject[];
-	If[TrueQ[OptionValue[Monitor]] && 10 < $VersionNumber < 11,
-		Message[Monitor::abort]
-	];
-	(* For automata that don't fit in memory, Reap (not Join) takes a long time to assemble the edge list. *)
-	edges = Join @@ Reap[
-		If[TrueQ[OptionValue[Monitor]] && !(10 < $VersionNumber < 11), Monitor, List][
-			While[stateindex <= statecount,
-(*
-AppendTo[unprocessedstatecounts, statecount - stateindex];
-*)
-				Sow[
-					MapIndexed[
-						Function[{monomiallist, index},
-							(* Reap isn't consistent. *)
-							newstate = If[monomiallist == {},
-								0,
-								If[degree === "High",
-									(* Multiply the image of the current state under the current Cartier operator by  factor ,
-									   keeping only monomials with exponents that are congruent to each other (according to the diagonal we're interested in). *)
-									CongruentMonomialTimes[First[monomiallist], factor, p, variablepartition, Modulus -> modulus],
-									Total[First[monomiallist]]
+			Function[currentstate,
+				(* Bin monomials by their exponents modulo p (using the fact that we're interested in a certain diagonal), and quotient the exponents by p.
+				   This applies all relevant Cartier operators at once. *)
+				(* We can't use the third argument of Reap to fully construct the edges, because it doesn't get applied to empty bins:
+				   Last[Reap[Sow[a, 0]; Sow[c, 2], {0, 1, 2}, f]] *)
+				(* TODO Use GroupBy instead? That won't fix it, but it might let me reduce the number of functions I have to pass to EdgeListAutomaton. *)
+				Last[Reap[
+					Function[monomial,
+						Sow[
+							monomial /. (var : variablepattern)^exponent_. :> var^Quotient[exponent, p],
+							{Mod[Exponent[monomial, variablerepresentatives], p]}
+						];
+					] /@
+						FastMonomialList[
+							If[degree === "High",
+								currentstate,
+								(* Multiply the current state by  factor ,
+								   keeping only monomials with exponents that are congruent to each other (according to the diagonal we're interested in). *)
+								Replace[
+									currentstate,
+									s : Except[0] :> CongruentMonomialTimes[FastMonomialList[s], factor, p, variablepartition, Modulus -> modulus]
 								]
-							];
-(* TODO Do associations do their own hashing, so that manual hashing is actually less efficient? *)
-							newstatehash = Hash[newstate];
-							newstateindex = statehashassociation[newstatehash];
-							If[
-								And[
-									checkstatesameness,
-									!MissingQ[newstateindex],
-									If[memorystorage,
-										state[newstateindex],
-										Import[FileNameJoin[{directory, ToString[newstateindex] <> ".m"}]]
-									] =!= newstate
-								]
-								,
-								Message[AutomaticSequenceReduce::hash, newstatehash];
-								newstateindex = Missing["NotFound"]
-							];
-							{
-								stateindex -> If[MissingQ[newstateindex],
-									statecount++;
-									If[memorystorage,
-										state[statecount] = newstate,
-										Export[FileNameJoin[{directory, ToString[statecount] <> ".m"}], newstate]
-									];
-									statehashassociation[newstatehash] = statecount;
-									output[statecount] = ConstantTerm[newstate, variables];
-									statecount
-									,
-									newstateindex
-								],
-								DigitList[index[[1]] - 1, p, Length[variablerepresentatives]]
-							}
-						],
-						(* Bin monomials by their exponents modulo p (using the fact that we're interested in a certain diagonal), and quotient the exponents by p.
-						   This applies all relevant Cartier operators at once. *)
-						Last[Reap[
-							Function[monomial,
-								Sow[
-									monomial /. (var : variablepattern)^exponent_. :> var^Quotient[exponent, p],
-									{Mod[Exponent[monomial, variablerepresentatives], p]}
-								];
-							] /@
-								FastMonomialList[
-									If[degree === "High",
-										If[memorystorage,
-											state[stateindex],
-											Import[FileNameJoin[{directory, ToString[stateindex] <> ".m"}]]
-										],
-										(* Multiply the current state by  factor ,
-										   keeping only monomials with exponents that are congruent to each other (according to the diagonal we're interested in). *)
-										Replace[
-											If[memorystorage,
-												state[stateindex],
-												Import[FileNameJoin[{directory, ToString[stateindex] <> ".m"}]]
-											],
-											s : Except[0] :> CongruentMonomialTimes[FastMonomialList[s], factor, p, variablepartition, Modulus -> modulus]
-										]
-									]
-								];
-							,
-							Tuples[Range[0, p - 1], Length[variablerepresentatives]]
-						]]
-					]
-				];
-				If[!checkstatesameness,
-					If[memorystorage,
-						Unset[state[stateindex]],
-						DeleteFile[FileNameJoin[{directory, ToString[stateindex] <> ".m"}]]
-					]
-				];
-				stateindex++
+							]
+						];
+					,
+					Tuples[Range[0, p - 1], Length[variablerepresentatives]]
+				]]
 			],
-(*
-]; Echo[statecount],
-*)
-			Column[{
-				Row[{"Processing state ", stateindex, " of ", statecount}],
-				ProgressIndicator[(stateindex - 1)/statecount],
-(*
-ListPlot[unprocessedstatecounts, ImageSize -> 350],
-*)
-				If[stateindex == 1,
-					Row[{}],
-					Row[{"Processing known states will finish at ", DatePlus[starttime, statecount/(stateindex - 1) DateDifference[starttime, DateObject[]]]}]
+			Function[monomiallist, 
+				(* Reap isn't consistent. *)
+				If[monomiallist == {},
+					0,
+					If[degree === "High",
+						(* Multiply the image of the current state under the current Cartier operator by  factor ,
+						   keeping only monomials with exponents that are congruent to each other (according to the diagonal we're interested in). *)
+						CongruentMonomialTimes[First[monomiallist], factor, p, variablepartition, Modulus -> modulus],
+						Total[First[monomiallist]]
+					]
 				]
-			}]
-		];
-(* don't keep this *)
-If[TrueQ[OptionValue[Monitor]],
-	PrintTemporary["done with Monitor"]
-];
-		If[checkstatesameness,
-(* keep this? *)
-If[TrueQ[OptionValue[Monitor]],
-		PrintTemporary["Clearing states"]
-];
-(*
-Print[state /@ Range[statecount]];
-*)
-			If[memorystorage,
-				(* Unsetting the states one at a time seems to be better than  Clear[state]  for avoiding a time-consuming memory spike when states have been swapped to disk. *)
-				Unset[state[#]] & /@ Range[statecount, 1, -1],
-				DeleteFile[FileNameJoin[{directory, ToString[#] <> ".m"}] & /@ Range[statecount]]
+			],
+			Function[index,
+				DigitList[index[[1]] - 1, p, Length[variablerepresentatives]]
 			]
-		];
-(* don't keep this *)
-If[TrueQ[OptionValue[Monitor]],
-	PrintTemporary["Reaping"]
-]
-	][[2, 1]];
-(* don't keep this *)
-If[TrueQ[OptionValue[Monitor]],
-	PrintTemporary["done Reaping"]
-];
-(*
-Echo[ByteCount[reap], "reap ByteCount"];
-Echo[AbsoluteTiming[MaxMemoryUsed[Flatten[reap, 1]]], Flatten];
-Echo[AbsoluteTiming[MaxMemoryUsed[Catenate[reap]]], Catenate];
-Echo[AbsoluteTiming[MaxMemoryUsed[Join @@ reap]], Join];
-*)
-(*
-Echo[unprocessedstatecounts];
-Echo[ListPlot[unprocessedstatecounts]];
-Clear[unprocessedstatecounts];
-*)
-	If[TrueQ[OptionValue[FlattenInputAlphabet]] && Length[variablepartition] == 1,
-(* keep this? *)
-If[TrueQ[OptionValue[Monitor]],
-	PrintTemporary["Flattening edges"]
-];
-		edges = MapAt[First, 2] /@ edges
-	];
-(* keep this? *)
-If[TrueQ[OptionValue[Monitor]],
-	PrintTemporary["Constructing automaton"]
-];
-	automaton = Automaton[edges, 1, Normal[output]];
-	If[TrueQ[OptionValue[Minimize]],
-		If[TrueQ[OptionValue[Monitor]],
-			PrintTemporary["Minimizing"]
-		];
-		automaton = AutomatonMinimize[automaton]
-	];
-(* don't keep this *)
-If[TrueQ[OptionValue[Monitor]],
-	PrintTemporary["Returning"]
-];
-	automaton
+		},
+		initialstate,
+		Length[variablerepresentatives],
+		Function[newstate,
+			ConstantTerm[newstate, variables]
+		],
+		Sequence @@ Replace[
+			{options},
+			{
+				("Degree" -> _) ->
+					Nothing,
+				(Method -> _) ->
+					Nothing
+			},
+			{1}
+		]
+	]
 ]
 Options[DiagonalSequenceAutomaton] = {
 	"Degree" -> Automatic,
 	FlattenInputAlphabet -> True,
 	HashStateNames -> False,
 	Method -> "LowDegree",
-	Minimize -> True,
+	MinimizeComplexity -> True,
 	Monitor -> False,
 	StateStorage -> "Memory"
 }
-SyntaxInformation[DiagonalSequenceAutomaton] = {"ArgumentsPattern" -> {_, _, OptionsPattern[]}}
 DiagonalSequenceAutomaton::bdmtd = "Value of option Method -> `1` must be \"HighDegree\" or \"LowDegree\"."
 
+(* for backward compatibility: *)
+AutomaticSequenceReduce[a__, Minimize -> minimize_, b___] :=
+	AutomaticSequenceReduce[a, MinimizeComplexity -> minimize, b]
 AutomaticSequenceReduce[
 	expression : (BaumSweet | RudinShapiro | ThueMorse)[n_],
 	{n_?PlausibleVariableQ},
+	numerationsystem : Except[_Rule] : Automatic,
 (*
 	numerationsystem : _Integer?Positive(* more general numeration system? at least check that it's an integer >= 2? *) : 2,
 *)
@@ -4073,18 +4138,44 @@ AutomaticSequenceReduce[
 ] :=
 (* XXX This ignores any Method option. Is that the right thing to do?
    Maybe it should issue a message. But not if we're AutomaticSequenceReduce[]ing something like BaumSweet[n] + Mod[CatalanNumber[n],4] *)
+(* xxx TODO This ignores the numeration system, if present. *)
 (* This evaluates even if none of the cases are matched, unlike other *Reduce symbols. *)
 	Replace[
 		expression,
 		{
-			BaumSweet[x_] (*/; numerationsystem === 2*) :>
+			BaumSweet[x_] /; MatchQ[numerationsystem, 2 | Automatic] :>
 				AutomaticSequence[$BaumSweetAutomaton][x],
-			RudinShapiro[x_] (*/; numerationsystem === 2*) :>
+			RudinShapiro[x_] /; MatchQ[numerationsystem, 2 | Automatic] :>
 				AutomaticSequence[$RudinShapiroAutomaton][x],
-			ThueMorse[x_] (*/; numerationsystem === 2*) :>
+			ThueMorse[x_] /; MatchQ[numerationsystem, 2 | Automatic] :>
 				AutomaticSequence[$ThueMorseAutomaton][x]
 		}
 	]
+(* This algorithm is described by Sutner and Tetruashvili, "Inferring automatic sequences".
+   Each state is represented as {partialnumber, kpower} modulo the period length,
+   where the first entry is a partial base-k representation (made up of the letters we've read so far, starting from the least significant digit). *)
+AutomaticSequenceReduce[
+	PeriodicSequence[period : {__}][n_],
+	{n_?PlausibleVariableQ},
+	base_Integer /; base >= 2,
+	options : OptionsPattern[]
+] :=
+With[{periodlength = Length[period]},
+	AutomaticSequence[
+		StateAutomaton[
+			Function[{currentstate, digit},
+				Mod[{{1, digit}, {0, base}}.currentstate, periodlength]
+			],
+			{0, 1},
+			Range[0, base - 1],
+			Function[state,
+				period[[First[state] + 1]]
+			],
+			options
+		]
+	][n]
+]
+(* xxx TODO This ignores the numeration system, if present. *)
 AutomaticSequenceReduce[
 	Mod[
 		originalsequence_[nsequence__],
@@ -4092,7 +4183,7 @@ AutomaticSequenceReduce[
 		(*, XXX optional argument *)
 	],
 	{nsequence__?PlausibleVariableQ},
-	(* XXX optional numeration system, *)
+	numerationsystem : Except[_Rule] : Automatic,
 	options : OptionsPattern[]
 ] /;
 	Or[
@@ -4295,9 +4386,10 @@ Module[{method, sequence, polynomialfunction, automaton, seriesvariables, y, fai
 AutomaticSequenceReduce[
 	(originalsequence : AlgebraicSequence[SeriesRoot[_, Modulus -> modulus_?PrimePowerQ]])[nsequence__],
 	{nsequence__?PlausibleVariableQ},
-	(* XXX optional numeration system, *)
+	numerationsystem : Except[_Rule] : Automatic,
 	options : OptionsPattern[]
 ] :=
+(* xxx TODO This ignores the numeration system, if present. *)
 With[
 	{sequence = AutomaticSequenceReduce[
 		Mod[originalsequence[nsequence], modulus],
@@ -4309,21 +4401,23 @@ With[
 AutomaticSequenceReduce[
 	(sequence_AutomaticSequence)[n_],
 	{n_?PlausibleVariableQ},
+	numerationsystem : Except[_Rule] : Automatic,
 (*
 	numerationsystem : _Integer?Positive(* more general numeration system? at least check that it's an integer >= 2? *) : (* xxx not the right default *) 2,
 *)
 	OptionsPattern[]
 ] :=
 (* XXX This ignores any Method option. Is that the right thing to do? *)
+(* xxx TODO This also ignores the numeration system, if present. *)
 (* xxx TODO this check isn't very general; what if  sequence  is multi-dimensional? *)
 	sequence[n] (*/; {numerationsystem} === AutomaticSequenceNumerationSystemList[sequence]*)
 AutomaticSequenceReduce[
 	expression_,
 	n_?PlausibleVariableQ,
-	(* XXX optional numeration system, *)
+	numerationsystem : Except[_Rule] : Automatic,
 	options : OptionsPattern[]
 ] :=
-With[{sequence = AutomaticSequenceReduce[expression, {n}, options]},
+With[{sequence = AutomaticSequenceReduce[expression, {n}, numerationsystem, options]},
 	sequence /; !MatchQ[sequence, _AutomaticSequenceReduce]
 ]
 Options[AutomaticSequenceReduce] = {
@@ -4333,12 +4427,11 @@ Options[AutomaticSequenceReduce] = {
 	FlattenInputAlphabet -> True,
 	HashStateNames -> False,
 	Method -> Automatic,
-	(* xxx better option name? *)
-	Minimize -> True,
+	MinimizeComplexity -> True,
 	Monitor -> False,
 	StateStorage -> "Memory"
 }
-SyntaxInformation[AutomaticSequenceReduce] = {"ArgumentsPattern" -> {_, _, (*_.,*) OptionsPattern[]}}
+SyntaxInformation[AutomaticSequenceReduce] = {"ArgumentsPattern" -> {_, _, _., OptionsPattern[]}}
 AutomaticSequenceReduce::bddeg = "Value of option \"Degree\" -> `1` must be Automatic, \"High\", or \"Low\"."
 AutomaticSequenceReduce::bdmtd = "Value of option Method -> `1` must be Automatic, \"ConstantTerm\", \"Diagonal\", or \"OrePolynomial\"."
 AutomaticSequenceReduce::bdstg = "Value of option StateStorage -> `1` must be \"Disk\" or \"Memory\"."
@@ -4389,78 +4482,61 @@ AutomatonAdjacencyMatrix[automaton_?AutomatonQ] :=
 	]]
 SyntaxInformation[AutomatonAdjacencyMatrix] = {"ArgumentsPattern" -> {_}}
 
+(* for backward compatibility: *)
+AutomatonDeterminize[a__, Minimize -> minimize_, b___] :=
+	AutomatonDeterminize[a, MinimizeComplexity -> minimize, b]
 (* TODO TransitionSequence[] is supported, but nonempty TransitionSequence[ ]s aren't *)
 AutomatonDeterminize[
 	originalautomaton : Automaton[originaledges_, originalinitialstate_, ___]?AutomatonQ,
 	outputfunction : Except[_Rule] : Identity,
-	OptionsPattern[]
+	options : OptionsPattern[]
 ] :=
-Module[
-	{
-		inputalphabet, initialstate, epsilontransitiongraph,
-		statelist, statecount, stateindex, edges, currentstate, newstate, originaloutputrules, determinizedautomaton
-	},
+Module[{inputalphabet, epsilontransitiongraph, originaloutputrules},
 	inputalphabet = AutomatonInputAlphabet[originalautomaton];
 (* TODO Don't I need to check  !MatchQ[inputalphabet, _AutomatonInputAlphabet] ? *)
 	epsilontransitiongraph = Graph[
 		AutomatonStateList[originalautomaton],
 		Cases[originaledges, {rule_Rule, TransitionSequence[]} :> rule]
 	];
-	initialstate = If[AutomatonInitialStateMode[originalautomaton, AutomatonDeterminize] == "StateList",
-		originalinitialstate,
-		{originalinitialstate}
-	];
-	statelist = {initialstate};
-	statecount = 1;
-	stateindex = 1;
-(* xxx support Monitor, HashState, and StateStorage? *)
-	edges = Join @@ Reap[
-		While[stateindex <= statecount,
-			currentstate = statelist[[stateindex]];
-			Sow[
-				Function[letter,
-					newstate = Union @@ Function[originalstate, Cases[originaledges, {originalstate -> s_, label_ /; MatchQ[letter, label]} :> s]] /@ currentstate;
-(*
-Print["newstate:", Tab, newstate];
-*)
-					(* Add to  newstate  the states in the original automaton that are reachable by epsilon transitions from the states we just put into  newstate . *)
-					newstate = Union[
-						newstate,
-						VertexOutComponent[epsilontransitiongraph, newstate]
-					];
-(*
-Print["newstate:", Tab, Tab, newstate];
-*)
-(* TODO Should I do the whole hashing states business?  Store the states as down values rather than in a list?  Allow them to be written to disk, etc.?  Monitor a progress bar? *)
-					If[!MemberQ[statelist, newstate],
-						statecount++;
-						AppendTo[statelist, newstate]
-					];
-					{currentstate -> newstate, letter}
-				] /@ inputalphabet
-			];
-			stateindex++
-		]
-	][[2, 1]];
 	originaloutputrules = AutomatonOutputRules[originalautomaton];
-	determinizedautomaton = Automaton[
-		edges,
-		initialstate,
-		Function[s, s -> outputfunction[Replace[s, originaloutputrules, {1}]]] /@ statelist,
-		InputAlphabet -> inputalphabet
-	];
-(*
-Print[determinizedautomaton];
-*)
-	If[TrueQ[OptionValue[Minimize]],
-		determinizedautomaton = AutomatonMinimize[determinizedautomaton, IndexedStateNames -> OptionValue[IndexedStateNames]],
-		If[TrueQ[OptionValue[IndexedStateNames]],
-			determinizedautomaton = IndexAutomaton[determinizedautomaton]
-		]
-	];
-	determinizedautomaton
+	StateAutomaton[
+		Function[{currentstate, letter},
+			With[
+				{
+					states = Union @@
+						Function[originalstate,
+							Cases[originaledges, {originalstate -> s_, label_ /; MatchQ[letter, label]} :> s]
+						] /@ currentstate
+				},
+				(* Add the states in the original automaton that are reachable by epsilon transitions from the states we just found. *)
+				Union[
+					states,
+					VertexOutComponent[epsilontransitiongraph, states]
+				]
+			]
+		],
+		If[AutomatonInitialStateMode[originalautomaton, AutomatonDeterminize] == "StateList",
+			originalinitialstate,
+			{originalinitialstate}
+		],
+		inputalphabet,
+		Function[newstate,
+			outputfunction[Replace[newstate, originaloutputrules, {1}]]
+		],
+		ExplicitInputAlphabet -> True,
+		options
+	]
 ]
-Options[AutomatonDeterminize] = {IndexedStateNames -> True, Minimize -> True}
+(* TODO add more options to this and Options[AutomatonReverse] *)
+Options[AutomatonDeterminize] = {
+	HashStateNames -> False,
+(*
+	IndexedStateNames -> True,
+*)
+	MinimizeComplexity -> True,
+	Monitor -> False,
+	StateStorage -> "Memory"
+}
 SyntaxInformation[AutomatonDeterminize] = {"ArgumentsPattern" -> {_, _., OptionsPattern[]}}
 AutomatonDeterminize::initamb = "Initial state specification `1` is both a state and a list of states.  Interpreting as a list of states."
 
@@ -4917,6 +4993,9 @@ PatternIntersection[pattern1_, pattern2_] /; pattern1 != pattern2 :=
 PatternIntersection[pattern1_, pattern2_] :=
 	_?(MatchQ[#, pattern1] && MatchQ[#, pattern2] &)
 
+(* for backward compatibility: *)
+AutomatonProduct[a__, Minimize -> minimize_, b___] :=
+	AutomatonProduct[a, MinimizeComplexity -> minimize, b]
 (* This requires complete automata.  The product automaton simulates two automata simultaneously, so the problem with incomplete automata
    is that if one automaton isn't defined for an input, then this halts the computation of the other automaton on that input as well. *)
 (* TODO Is the $EmptyPattern pattern general enough? *)
@@ -5016,7 +5095,7 @@ Print["Some edge labels contain patterns."];
 (*
 Print["done computing product"];
 *)
-		If[TrueQ[OptionValue[Minimize]],
+		If[TrueQ[OptionValue[MinimizeComplexity]],
 (*
 Print["state count: ", AutomatonStateCount[productautomaton]];
 Print["minimizing"];
@@ -5040,7 +5119,7 @@ Print["done compressing"];
 	];
 	productautomaton /; !failed
 ]
-Options[AutomatonProduct] = {IndexedStateNames -> True, Minimize -> True}
+Options[AutomatonProduct] = {IndexedStateNames -> True, MinimizeComplexity -> True}
 SyntaxInformation[AutomatonProduct] = {"ArgumentsPattern" -> {_, _, _., OptionsPattern[]}}
 AutomatonProduct::alph = "Input alphabets for the two automata are not the same."
 AutomatonProduct::com = "One of the input automata is not complete."
@@ -5088,15 +5167,9 @@ SyntaxInformation[AutomatonQ] = {"ArgumentsPattern" -> {_}}
 AutomatonReverse[
 (* xxx assumes that we don't have multiple initial states *)
 	originalautomaton : Automaton[originaledges_, originalinitialstate_, ___]?AutomatonQ,
-	OptionsPattern[]
+	options : OptionsPattern[]
 ] :=
-Module[
-	{
-		inputalphabet, originalstatelist, originalstatepositionindex, originalinitialstateindex, originaltransitionrules, originaloutputrules, currentstate, letter,
-		edges, statecount, state, statehashassociation, stateindex, output, newstate, newstatehash, newstateindex, starttime,
-		checkstatesameness, memorystorage, directory
-	},
-	checkstatesameness = !TrueQ[OptionValue[HashStateNames]];
+Module[{inputalphabet, originalstatelist, originalstatepositionindex, originalinitialstateindex, originaltransitionrules, originaloutputrules},
 	inputalphabet = AutomatonInputAlphabet[originalautomaton];
 (* TODO Don't I need to check  !MatchQ[inputalphabet, _AutomatonInputAlphabet] ? *)
 	originalstatelist = AutomatonStateList[originalautomaton];
@@ -5114,122 +5187,37 @@ Module[
 		_ -> $Failed
 	];
 	originaloutputrules = AutomatonOutputRules[originalautomaton];
-	statecount = 1;
-	newstate = Replace[originalstatelist, originaloutputrules, {1}];
-	memorystorage = Replace[OptionValue[StateStorage],
-		{
-			"Disk" | {"Disk", ___, "Directory" -> Automatic, ___} :> (
-				directory = $TemporaryDirectory;
-				False
-			),
-		 	{"Disk", ___, "Directory" -> dir_, ___} :> (
-				directory = dir;
-				False
-			),
-			"Memory" ->
-				True,
-			_ ->
-				False
-		}
-	];
-	If[memorystorage,
-		state[statecount] = newstate,
-		Export[FileNameJoin[{directory, ToString[statecount] <> ".m"}], newstate]
-	];
-	statehashassociation = Association[];
-	statehashassociation[Hash[newstate]] = statecount;
-	output = Association[];
-	output[statecount] = newstate[[originalinitialstateindex]];
-	stateindex = 1;
-	starttime = DateObject[];
-	If[TrueQ[OptionValue[Monitor]] && 10 < $VersionNumber < 11,
-		Message[Monitor::abort]
-	];
-	edges = Join @@ Reap[
-		If[TrueQ[OptionValue[Monitor]] && !(10 < $VersionNumber < 11), Monitor, List][
-			While[stateindex <= statecount,
-				currentstate = If[memorystorage,
-					state[stateindex],
-					Import[FileNameJoin[{directory, ToString[stateindex] <> ".m"}]]
-				];
-				Sow[
-					Table[
-						newstate = currentstate[[
-							Lookup[
-								originalstatepositionindex,
+	StateAutomaton[
+		Function[{currentstate, letter},
+			currentstate[[
+				Lookup[
+					originalstatepositionindex,
 (* xxx if the original automaton isn't complete, then we'll get $Failed sometimes under transitions; test for completeness? *)
-								Function[s, Replace[{s, letter}, originaltransitionrules]] /@ originalstatelist
-							]
-						]];
-						newstatehash = Hash[newstate];
-						newstateindex = statehashassociation[newstatehash];
-						If[
-							And[
-								checkstatesameness,
-								!MissingQ[newstateindex],
-								If[memorystorage,
-									state[newstateindex],
-									Import[FileNameJoin[{directory, ToString[newstateindex] <> ".m"}]]
-								] =!= newstate
-							]
-							,
-(* xxx this isn't really ideal; should be able to recover by checking the full states.  but then we lose speed, since the association needs distinct keys *)
-							Message[AutomatonReverse::hash, newstatehash];
-							newstateindex = Missing["NotFound"]
-						];
-						{
-							stateindex -> If[MissingQ[newstateindex],
-								statecount++;
-								If[memorystorage,
-									state[statecount] = newstate,
-									Export[FileNameJoin[{directory, ToString[statecount] <> ".m"}], newstate]
-								];
-								statehashassociation[newstatehash] = statecount;
-								output[statecount] = newstate[[originalinitialstateindex]];
-								statecount
-								,
-								newstateindex
-							],
-							letter
-						}
-						,
-						{letter, inputalphabet}
-					]
-				];
-				If[!checkstatesameness,
-					If[memorystorage,
-						Unset[state[stateindex]],
-						DeleteFile[FileNameJoin[{directory, ToString[stateindex] <> ".m"}]]
-					]
-				];
-				stateindex++
-			],
-			Column[{
-				Row[{"Processing state ", stateindex, " of ", statecount}],
-				ProgressIndicator[(stateindex - 1)/statecount],
-				If[stateindex == 1,
-					Row[{}],
-					Row[{"Processing known states will finish at ", DatePlus[starttime, statecount/(stateindex - 1) DateDifference[starttime, DateObject[]]]}]
+					Function[s, Replace[{s, letter}, originaltransitionrules]] /@ originalstatelist
 				]
-			}]
-		];
-		If[checkstatesameness,
-			If[memorystorage,
-				(* Unsetting the states one at a time seems to be better than  Clear[state]  for avoiding a time-consuming memory spike when states have been swapped to disk. *)
-				Unset[state[#]] & /@ Range[statecount, 1, -1],
-				DeleteFile[FileNameJoin[{directory, ToString[#] <> ".m"}] & /@ Range[statecount]]
-			]
-		];
-	][[2, 1]];
-	Automaton[edges, 1, Normal[output]]
+			]]
+		],
+		Replace[originalstatelist, originaloutputrules, {1}],
+		inputalphabet,
+		Function[newstate,
+			newstate[[originalinitialstateindex]]
+		],
+		MinimizeComplexity -> False,
+		options
+	]
 ]
-Options[AutomatonReverse] = {HashStateNames -> False, Monitor -> False, StateStorage -> "Memory"}
+Options[AutomatonReverse] = {
+	HashStateNames -> False,
+(*
+	IndexedStateNames -> True,
+*)
+	Monitor -> False,
+	StateStorage -> "Memory"
+}
 SyntaxInformation[AutomatonReverse] = {"ArgumentsPattern" -> {_, OptionsPattern[]}}
-AutomatonReverse::hash = "Hash value `1` occurs for two distinct states; resulting automaton may not be correct."
 
-(* This maybe isn't ideal because it runs AutomatonQ twice. *)
 AutomatonStateCount[automaton_?AutomatonQ] :=
-	Length[AutomatonStateList[automaton]]
+	CountDistinct[Join @@ List @@@ First /@ First[automaton]]
 SyntaxInformation[AutomatonStateCount] = {"ArgumentsPattern" -> {_}}
 
 AutomatonStateList[automaton_?AutomatonQ] :=
@@ -5331,7 +5319,6 @@ Should I use NullSpace rather than RowReduce?
 	lastrow.Table[y^p^i, {i, 0, statecount}] /; !failed
 ]
 Options[ChristolPolynomial] = {Modulus -> Automatic}
-SyntaxInformation[ChristolPolynomial] = {"ArgumentsPattern" -> {_, _, OptionsPattern[]}}
 ChristolPolynomial::mat = "Row reduction produced an ill\[Hyphen]formed matrix; resulting polynomial may not be correct."
 ChristolPolynomial::mod = "Modulus must be an integer."
 ChristolPolynomial::prime = "The `1`\[Hyphen]automatic sequence must be presented as a " <> box["p"] <> "\[Hyphen]automatic sequence for prime " <> box["p"] <> "."
@@ -5351,9 +5338,77 @@ CompleteAutomatonQ[_] :=
 SyntaxInformation[CompleteAutomatonQ] = {"ArgumentsPattern" -> {_}}
 CompleteAutomatonQ::input = "Unable to determine the input alphabet."
 
+ConstantRecursiveSequence[recurrencecoefficients : {__}, initialconditions : {__}][n_Integer] :=
+Module[{recurrenceorder, term, failed},
+	failed = Catch[
+		recurrenceorder = Length[recurrencecoefficients];
+		If[recurrenceorder != Length[initialconditions],
+			Throw[True]
+		];
+		Quiet[
+			term = Check[
+				First[Dot[
+					MatrixPower[
+(* TODO introduce a CompanionMatrix function? *)
+						Append[
+							SparseArray[{Band[{1, 2}] -> 1}, {recurrenceorder - 1, recurrenceorder}],
+							recurrencecoefficients
+						],
+						n
+					],
+					initialconditions
+				]],
+				If[n == 0,
+					First[initialconditions],
+					Throw[True]
+				],
+				MatrixPower::sing
+			],
+			MatrixPower::sing
+		];
+		False
+	];
+	term /; !failed
+]
+ConstantRecursiveSequence[{}, {}][_Integer] :=
+	0
+SyntaxInformation[ConstantRecursiveSequence] = {"ArgumentsPattern" -> {_, _}}
+
+ConstantRecursiveSequenceReduce[Fibonacci[n_], n_] /; PlausibleVariableQ[n] :=
+	ConstantRecursiveSequence[{1, 1}, {0, 1}][n]
+ConstantRecursiveSequenceReduce[JacobsthalNumber[n_], n_] /; PlausibleVariableQ[n] :=
+	ConstantRecursiveSequence[{2, 1}, {0, 1}][n]
+ConstantRecursiveSequenceReduce[LucasL[n_], n_] /; PlausibleVariableQ[n] :=
+	ConstantRecursiveSequence[{1, 1}, {2, 1}][n]
+ConstantRecursiveSequenceReduce[PadovanNumber[n_], n_] /; PlausibleVariableQ[n] :=
+	ConstantRecursiveSequence[{1, 1, 0}, {1, 0, 0}][n]
+ConstantRecursiveSequenceReduce[PellNumber[n_], n_] /; PlausibleVariableQ[n] :=
+	ConstantRecursiveSequence[{1, 2}, {0, 1}][n]
+ConstantRecursiveSequenceReduce[Tribonacci[n_], n_] /; PlausibleVariableQ[n] :=
+	ConstantRecursiveSequence[{1, 1, 1}, {0, 0, 1}][n]
+ConstantRecursiveSequenceReduce[PolygonalNumber[n_], n_] /; PlausibleVariableQ[n] :=
+	ConstantRecursiveSequence[{1, -3, 3}, {0, 1, 3}][n]
+(* TODO two-argument PolygonalNumber? *)
+ConstantRecursiveSequenceReduce[PeriodicSequence[period : {__}][n_], n_] /; PlausibleVariableQ[n] :=
+	ConstantRecursiveSequence[UnitVector[Length[period], 1], period][n]
+ConstantRecursiveSequenceReduce[polynomial_, n_] /; PlausibleVariableQ[n] && PolynomialQ[polynomial, n] :=
+Module[{polynomialrank = PolynomialComplexity[polynomial, n], m},
+	ConstantRecursiveSequence[
+		Table[(-1)^(polynomialrank - m + 1) Binomial[polynomialrank, m], {m, 0, polynomialrank - 1}],
+		Table[polynomial, {n, 0, polynomialrank - 1}]
+	][n]
+]
+(* TODO 2^n, exponential polynomials in general *)
+(* TODO closure properties: addition (linear combinations), multiplication, Fibonacci[a n + b], riffle (including quasi-polynomials) *)
+(* TODO ConstantRecursiveSequenceReduce should evaluate on ConstantRecursiveSequence objects *)
+SyntaxInformation[ConstantRecursiveSequenceReduce] = {"ArgumentsPattern" -> {_, _}}
+
 ConstantTermSequence[powerpolynomial_, variables_List][n_Integer?NonNegative] :=
 	ConstantTermSequence[powerpolynomial, 1, variables][n]
-ConstantTermSequence[powerpolynomial_, factorpolynomial_, variables_List][n_Integer?NonNegative] /;
+ConstantTermSequence[powerpolynomial_, factorpolynomial_, variables_List][0] /;
+		LaurentPolynomialQ[powerpolynomial, variables] && LaurentPolynomialQ[factorpolynomial, variables] :=
+	0
+ConstantTermSequence[powerpolynomial_, factorpolynomial_, variables_List][n_Integer?Positive] /;
 		LaurentPolynomialQ[powerpolynomial, variables] && LaurentPolynomialQ[factorpolynomial, variables] :=
 	LaurentPolynomialCoefficient[powerpolynomial^n factorpolynomial, variables, ConstantArray[0, Length[variables]]]
 ConstantTermSequence[powerpolynomial_, variable : Except[_List]][n_Integer?NonNegative] :=
@@ -5912,6 +5967,60 @@ Module[{dimension, relations, basissequences, initialconditions, failed, head},
 Options[FindAutomaticSequenceRecurrence] = {"Output" -> Automatic, Monitor -> False}
 SyntaxInformation[FindAutomaticSequenceRecurrence] = {"ArgumentsPattern" -> {{__}, _, _, OptionsPattern[]}}
 
+FindConstantRecursiveSequenceFunction[list : {__}] :=
+With[
+	{	linearrecurrence = If[MatchQ[list, {(0 | 0.) ..}],
+			{},
+			FindLinearRecurrence[list]
+		]
+	},
+	ConstantRecursiveSequence[
+		Reverse[linearrecurrence],
+(* TODO xxx Are there always enough terms to Take? *)
+		Take[list, Length[linearrecurrence]]
+	] /; !MatchQ[linearrecurrence, _FindLinearRecurrence]
+]
+FindConstantRecursiveSequenceFunction[list : {__}, n_] :=
+With[{constantrecursivesequence = FindConstantRecursiveSequenceFunction[list]},
+	constantrecursivesequence[n] /; !MatchQ[constantrecursivesequence, _FindConstantRecursiveSequenceFunction]
+]
+SyntaxInformation[FindConstantRecursiveSequenceFunction] = {"ArgumentsPattern" -> {{__}, _.}}
+
+FindConstantRecursiveSequenceRecurrence[
+	list : {__},
+	(a : Except[Rule])[n_?PlausibleVariableQ]
+] :=
+With[
+	{	linearrecurrence = If[MatchQ[list, {(0 | 0.) ..}],
+			{},
+			FindLinearRecurrence[list]
+		]
+	},
+	Join[
+		{a[n + Length[linearrecurrence]] == Reverse[linearrecurrence].Table[a[n + i], {i, 0, Length[linearrecurrence] - 1}]},
+		MapIndexed[
+			Function[{initialcondition, index},
+				a[index[[1]] - 1] == initialcondition
+			],
+(* TODO xxx Are there always enough terms to Take? *)
+			Take[list, Length[linearrecurrence]]
+		]
+	] /; !MatchQ[linearrecurrence, _FindLinearRecurrence]
+]
+SyntaxInformation[FindConstantRecursiveSequenceRecurrence] = {"ArgumentsPattern" -> {{__}, _}}
+
+FindPeriodicSequenceFunction[list : {__}] :=
+Module[{n},
+	Head[FindPeriodicSequenceFunction[list, n, 0]]
+]
+FindPeriodicSequenceFunction[list : {__}, n_] :=
+	FindPeriodicSequenceFunction[list, n, 0]
+FindPeriodicSequenceFunction[list : {__}, n_, offset_Integer] :=
+With[{period = FindRepeat[list, {1}]},
+	PeriodicSequence[RotateRight[period, offset]][n]
+]
+SyntaxInformation[FindPeriodicSequenceFunction] = {"ArgumentsPattern" -> {{__}, _., _.}}
+
 FindPolynomialCoefficientList[data_, offset_] :=
 Module[{var},
 	CoefficientList[
@@ -6228,8 +6337,8 @@ FromDigitList[digits_List, base_Integer : 10] /; Abs[base] >= 2 :=
 	digits . base^Range[0, Length[digits] - 1]
 FromDigitList[digits_List, numerationsystem : "Fibonacci" | "Tribonacci"] :=
 	digits . Map[NumerationSystemBasisFunction[numerationsystem], Range[0, Length[digits] - 1]]
-FromDigitList[digits_List, LinearNumerationSystem[kernel_, initialterms_]?LinearNumerationSystemQ] :=
-	digits . LinearRecurrence[kernel, initialterms, {1, Length[digits]}]
+FromDigitList[digits_List, LinearNumerationSystem[kernel_, initialconditions_]?LinearNumerationSystemQ] :=
+	digits . LinearRecurrence[kernel, initialconditions, {1, Length[digits]}]
 FromDigitList[digits_List, "Factorial"] :=
 	digits . Range[Length[digits]]!
 (* Mixed base. *)
@@ -6391,6 +6500,11 @@ Module[
 ]
 SyntaxInformation[GeneratingFunctionRelations] = {"ArgumentsPattern" -> {_, _, _}}
 
+SetAttributes[GlaisherGould, Listable]
+GlaisherGould[n_Integer?NonNegative] :=
+	2^DigitCount[n, 2, 1]
+SyntaxInformation[GlaisherGould] = {"ArgumentsPattern" -> {_}}
+
 (* IntegerPrepend doesn't care whether the resulting representation is a canonical representation in the numeration system; for example
    IntegerPrepend[1, "Fibonacci", {1}]
    evaluates without indicent. *)
@@ -6443,8 +6557,8 @@ SyntaxInformation[LinearNumerationSystem] = {"ArgumentsPattern" -> {_, _}}
 
 (* This doesn't verify that the sequence of basis elements is increasing. *)
 (* TODO Should it accept a single integer base? *)
-LinearNumerationSystemQ[LinearNumerationSystem[kernel : {__Integer}, initialterms : {1, ___Integer}]] :=
-	Length[kernel] == Length[initialterms]
+LinearNumerationSystemQ[LinearNumerationSystem[kernel : {__Integer}, initialconditions : {1, ___Integer}]] :=
+	Length[kernel] == Length[initialconditions]
 LinearNumerationSystemQ[_] :=
 	False
 SyntaxInformation[LinearNumerationSystemQ] = {"ArgumentsPattern" -> {_}}
@@ -6984,6 +7098,17 @@ Options[OrePolynomial] = {Modulus -> 0}
 SyntaxInformation[OrePolynomial] = {"ArgumentsPattern" -> {_, _, _, OptionsPattern[]}}
 OrePolynomial::syntax = "The syntax of OrePolynomial has changed.  Using OrePolynomial[`1`, `2`, `3`]."
 
+SetAttributes[PadovanNumber, Listable]
+PadovanNumber[n_Integer] := ConstantRecursiveSequence[{1, 1, 0}, {1, 0, 0}][n]
+SyntaxInformation[PadovanNumber] = {"ArgumentsPattern" -> {_}}
+
+SetAttributes[PellNumber, Listable]
+PellNumber[n_Integer] := ConstantRecursiveSequence[{1, 2}, {0, 1}][n]
+SyntaxInformation[PellNumber] = {"ArgumentsPattern" -> {_}}
+
+PeriodicSequence[period : {__}][n_Integer] :=
+	period[[Mod[n, Length[period]] + 1]]
+
 SetAttributes[Radical, Listable]
 Radical[0] = Infinity
 Radical[n_Integer] := Times @@ First /@ FactorInteger[Abs[n]]
@@ -7217,7 +7342,7 @@ Module[{variablepositions, automaton, temporarycells = {}, failed},
 						InputAlphabet -> AutomatonInputAlphabet[inputautomaton]
 					],
 					And @@ # &,
-					Minimize -> OptionValue[Minimize]
+					MinimizeComplexity -> OptionValue[MinimizeComplexity]
 				]
 		];
 		(* Delete components of the edges. *)
@@ -7296,11 +7421,11 @@ Print[reachability /@ statelist];
 				automaton,
 				Or @@ # &,
 				(* Instead of minimizing here, we minimize below. *)
-				Minimize -> False
+				MinimizeComplexity -> False
 			],
 			Length[variables] - Length[varstodelete]
 		];
-		If[TrueQ[OptionValue[Minimize]],
+		If[TrueQ[OptionValue[MinimizeComplexity]],
 			If[TrueQ[OptionValue[Monitor]],
 				AppendTo[temporarycells, PrintTemporary[Tab, "State count: ", AutomatonStateCount[automaton]]];
 				AppendTo[temporarycells, PrintTemporary[Tab, "minimizing..."]]
@@ -7318,7 +7443,7 @@ Print[reachability /@ statelist];
 		Delete[variables, variablepositions]
 	} /; !failed
 ]
-Options[ExistsAutomaton] = {Minimize -> True, Monitor -> False}
+Options[ExistsAutomaton] = {MinimizeComplexity -> True, Monitor -> False}
 
 (*
 TODO $Failed outputs in the input automata here that aren't specified by the output rules aren't getting addressed.
@@ -7365,7 +7490,7 @@ Module[{combinedvariables, permutation, edges2, inputalphabet2, variables2, free
 			_
 		],
 		Or @@ # &,
-		Minimize -> OptionValue[Minimize]
+		MinimizeComplexity -> OptionValue[MinimizeComplexity]
 	];
 	If[TrueQ[OptionValue[Monitor]],
 		AppendTo[temporarycells, PrintTemporary[Tab, "Output state count: ", AutomatonStateCount[automaton]]];
@@ -7376,7 +7501,7 @@ Module[{combinedvariables, permutation, edges2, inputalphabet2, variables2, free
 		combinedvariables
 	}
 ]
-Options[OrAutomaton] = {Minimize -> True, Monitor -> False}
+Options[OrAutomaton] = {MinimizeComplexity -> True, Monitor -> False}
 
 (* If this receives an underdetermined automaton with no output for $Failed then of course that's incorrect, but it will output without complaining. *)
 NotAutomaton[
@@ -7392,6 +7517,9 @@ NotAutomaton[
 		variables
 	}
 
+(* for backward compatibility: *)
+ReduceAutomaton[a__, Minimize -> minimize_, b___] :=
+	ReduceAutomaton[a, MinimizeComplexity -> minimize, b]
 ReduceAutomaton[
 	expression_,
 	numerationsystem_?PositiveNumerationSystemQ
@@ -7429,7 +7557,7 @@ Module[
 			Message[Monitor::abort]
 		];
 		monitor = TrueQ[OptionValue[Monitor]] && !(10 < $VersionNumber < 11);
-		minimize = OptionValue[Minimize];
+		minimize = OptionValue[MinimizeComplexity];
 		$inequalityheadpattern = Equal | Greater | GreaterEqual | Less | LessEqual | Unequal;
 		(* Add a wrapper to be able to identify atomic expressions. *)
 		expandedexpression = expression /.
@@ -7467,7 +7595,7 @@ Module[
 *)
 			AutomaticSequence[m_Automaton(*, XXX optional numeration system *)][x__] :>
 				(* TODO This doesn't support base Fibonacci. *)
-				With[{sequence = SynchronizedSequenceReduce[AutomaticSequence[m(*, XXX optional numeration system *)][x], {x}, numerationsystem, Minimize -> minimize]},
+				With[{sequence = SynchronizedSequenceReduce[AutomaticSequence[m(*, XXX optional numeration system *)][x], {x}, numerationsystem, MinimizeComplexity -> minimize]},
 					(* At one point this condition prevented an infinite loop for  ReduceAutomaton[ThueMorse[x] == 0, 3, x] .
 					   It's no longer needed for that, but we probably still want the test. *)
 					sequence /; !MatchQ[sequence, _SynchronizedSequenceReduce] || Message[ReduceAutomaton::auto, AutomaticSequence[m][x]]
@@ -7582,7 +7710,7 @@ Print[expandedexpression /. {and -> Inactive[And], exists -> Inactive[Exists], n
 		(* Compute the automata. *)
 		automatoncomputationrules = {
 			exists[vars_, a : {_Automaton, _List}] :>
-				With[{m = (*(Print[#[[1]]];#[[2]])&@(AbsoluteTiming@*)ExistsAutomaton[vars, a, numerationsystem, Minimize -> minimize, Monitor -> monitor](*)*)},
+				With[{m = (*(Print[#[[1]]];#[[2]])&@(AbsoluteTiming@*)ExistsAutomaton[vars, a, numerationsystem, MinimizeComplexity -> minimize, Monitor -> monitor](*)*)},
 (*
 Print[Exists];
 Print[Tab, vars];
@@ -7603,7 +7731,7 @@ If[!MatchQ[m, {_Automaton, _List}],
 					m
 				],
 			or[a : {_Automaton, _List}, b : {_Automaton, _List}] :>
-				With[{m = OrAutomaton[a, b, numerationsystem, Minimize -> minimize, Monitor -> monitor]},
+				With[{m = OrAutomaton[a, b, numerationsystem, MinimizeComplexity -> minimize, Monitor -> monitor]},
 (*
 Print[Or];
 Print[Tab, a];
@@ -7699,7 +7827,7 @@ Print[Times];
 	];
 	automaton /; !failed && MatchQ[automaton, _Automaton] && SubsetQ[symbol /@ variables, finalvariables]
 ]
-Options[ReduceAutomaton] = {FlattenInputAlphabet -> True, Information -> False, Minimize -> True, Monitor -> False}
+Options[ReduceAutomaton] = {FlattenInputAlphabet -> True, Information -> False, MinimizeComplexity -> True, Monitor -> False}
 SyntaxInformation[ReduceAutomaton] = {"ArgumentsPattern" -> {_, _, _., OptionsPattern[]}}
 ReduceAutomaton::auto = "Unable to convert automatic sequence `1`."
 ReduceAutomaton::quant = "Variables `1` are quantified too many times."
@@ -7860,6 +7988,8 @@ RegularSequenceReduce[RudinShapiro[n_], n_, {2}] /; PlausibleVariableQ[n] :=
 	RegularSequence[{1, 0}, {{{1, 0}, {1, 0}}, {{0, 1}, {0, -1}}}, {1, 1}, 2][n]
 RegularSequenceReduce[ThueMorse[n_], n_, {2}] /; PlausibleVariableQ[n] :=
 	RegularSequence[{1, 0}, {{{1, 0}, {0, 1}}, {{0, 1}, {1, 0}}}, {0, 1}, 2][n]
+RegularSequenceReduce[GlaisherGould[n_], n_, {2}] /; PlausibleVariableQ[n] :=
+	RegularSequence[{1}, {{{1}}, {{2}}}, {1}, 2][n]
 RegularSequenceReduce[SternBrocot[n_], n_, {2}] /; PlausibleVariableQ[n] :=
 	RegularSequence[{1, 0}, {{{1, 0}, {1, 1}}, {{0, 1}, {-1, 2}}}, {0, 1}, 2][n]
 RegularSequenceReduce[BitLength[n_], n_, {2}] /; PlausibleVariableQ[n] :=
@@ -8121,6 +8251,11 @@ SequenceComplexity[AutomaticSequence[automaton_, ___] | AutomaticSequence[automa
 (* TODO ConstantTermSequence *)
 (* TODO DiagonalSequence *)
 (* TODO MorphicSequence *)
+(* TODO merge these for polynomial sequences? *)
+PolynomialComplexity[0, n_?PlausibleVariableQ] :=
+	0
+PolynomialComplexity[polynomial_, n_] /; PlausibleVariableQ[n] && PolynomialQ[polynomial, n] :=
+	Exponent[polynomial, n] + 1
 SequenceComplexity[(RegularSequence[u_, _, __]?RegularSequenceObjectQ) | (RegularSequence[u_, _, __]?RegularSequenceObjectQ)[__]] :=
 	Length[u]
 SyntaxInformation[SequenceComplexity] = {"ArgumentsPattern" -> {_}}
@@ -8335,7 +8470,7 @@ Module[
 		synchronizedautomaton = AutomatonDeterminize[
 			synchronizedautomaton,
 			Or @@ # &,
-			Minimize -> OptionValue[Minimize]
+			MinimizeComplexity -> OptionValue[MinimizeComplexity]
 		];
 		False
 	];
@@ -8351,7 +8486,7 @@ SynchronizedSequenceReduce[
 With[{sequence = SynchronizedSequenceReduce[originalsequence[n], {n}, base, options]},
 	sequence /; !MatchQ[sequence, _SynchronizedSequenceReduce]
 ]
-Options[SynchronizedSequenceReduce] = {Minimize -> True}
+Options[SynchronizedSequenceReduce] = {MinimizeComplexity -> True}
 SyntaxInformation[SynchronizedSequenceReduce] = {"ArgumentsPattern" -> {_, _, _., OptionsPattern[]}}
 SynchronizedSequenceReduce::inalph = "Input alphabet `1` must be a list of base\[Hyphen]`2` digits."
 SynchronizedSequenceReduce::input = "Unable to determine the input alphabet."
@@ -8375,7 +8510,7 @@ SyntaxInformation[TransitionSequence] = {"ArgumentsPattern" -> {___}}
 (*** Tribonacci code ***)
 
 (* If we don't cache values, then identifying Tribonacci-regularity of sequences is really slow. *)
-TN[n_] := TN[n] = MatrixPower[{{1, 1, 1}, {1, 0, 0}, {0, 1, 0}}, n - 2][[1, 1]]
+TN[n_] := TN[n] = ConstantRecursiveSequence[{1, 1, 1}, {0, 0, 1}][n]
 
 SetAttributes[Tribonacci, Listable]
 Tribonacci[n_Integer] :=
